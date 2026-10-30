@@ -46,12 +46,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);fo
 .tabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .tabs button.add-p{border-style:dashed;background:transparent;color:var(--accent)}
 .thumb{width:48px;height:64px;border-radius:6px;background:var(--bg);border:1px solid var(--line);object-fit:cover;display:block}
+.thumbs{display:flex;gap:4px}
 .thumb.vazia{display:grid;place-items:center;font-size:10px;color:var(--muted)}
 .sku-chips{display:flex;flex-wrap:wrap;gap:4px}
 .sku-chips code{font:500 12px var(--f-mono);background:var(--chip);padding:2px 6px;border-radius:5px}
 .peca-det{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
 .peca-det:first-child{border-top:0;margin-top:0;padding-top:0}
 .peca-det h4{margin:0 0 8px;font-size:14px}
+
+.combo{position:relative}
+.combo input{padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.combo-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:240px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px}
+.combo-list button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:500 14px var(--f-body);padding:8px 10px;border-radius:6px;cursor:pointer}
+.combo-list button[aria-selected="true"],.combo-list button:hover{background:var(--accent-soft)}
+.combo-list button.novo{color:var(--accent);font-weight:700}
+.combo-list .vazio{padding:8px 10px;color:var(--muted);font-size:13px}
 .olist-err{white-space:pre-wrap;font-size:12px;color:var(--warn);margin:8px 0 0}
 .gradewrap{overflow-x:auto}
 table.grade{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
@@ -233,13 +242,7 @@ tr.detail > td{background:var(--bg)}
             <button type="button" data-tipo="simples" aria-pressed="true">Peça avulsa</button>
             <button type="button" data-tipo="conjunto" aria-pressed="false">Conjunto (vendido como kit)</button>
           </div>
-          <div class="ref-grid">
-            <div class="foto-col">
-              <div class="foto" id="f-foto-box"><img id="f-foto-img" alt="Foto de referência" hidden><span id="f-foto-vazio">Sem foto</span></div>
-              <label class="btn ghost sm foto-btn" for="f-foto">Escolher foto</label>
-              <input type="file" id="f-foto" accept="image/jpeg,image/png,image/webp" hidden>
-              <button type="button" class="link" id="f-foto-rem" hidden>Remover foto</button>
-            </div>
+          <div>
             <div class="fields">
               <label class="f">Referência<input id="f-ref" readonly></label>
               <label class="f">Nº<input id="f-num" readonly></label>
@@ -263,6 +266,14 @@ tr.detail > td{background:var(--bg)}
         </div>
         <div class="panel" id="peca-panel">
           <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0" id="peca-titulo">Peça</h3><span id="peca-rem-box"></span></div>
+          <div class="ref-grid">
+            <div class="foto-col">
+              <div class="foto" id="f-foto-box"><img id="f-foto-img" alt="Foto de referência" hidden><span id="f-foto-vazio">Sem foto</span></div>
+              <label class="btn ghost sm foto-btn" for="f-foto">Escolher foto</label>
+              <input type="file" id="f-foto" accept="image/jpeg,image/png,image/webp" hidden>
+              <button type="button" class="link" id="f-foto-rem" hidden>Remover foto</button>
+            </div>
+            <div style="min-width:0">
           <div class="fields">
             <label class="f">Categoria<select id="f-cat"></select></label>
             <label class="f" id="f-pnome-box" hidden>Nome do produto (desta peça)<input id="f-pnome" placeholder="Ex.: Top faixa linho"></label>
@@ -273,6 +284,8 @@ tr.detail > td{background:var(--bg)}
           <div class="section"><div class="row" style="justify-content:space-between"><b>Tamanhos</b><button class="link" type="button" data-qa="tamanhos">+ novo tamanho</button></div>
             <div class="chips" id="f-tams"></div>
             <div class="add" id="qa-tamanhos" hidden><input class="cod" id="qa-tamanhos-cod" maxlength="3" placeholder="Cód."><input id="qa-tamanhos-nome" placeholder="Nome do tamanho"><button class="btn sm" type="button" data-qa-save="tamanhos">Adicionar tamanho</button></div></div>
+            </div>
+          </div>
         </div>
 
         <div class="panel" id="grade-panel">
@@ -383,7 +396,7 @@ tr.detail > td{background:var(--bg)}
     <div class="panel" style="margin-bottom:20px">
       <h3>Nova mão de obra</h3>
       <div class="fields three">
-        <label class="f">Etapa<input id="s-etapa" list="etapas" placeholder="Ex.: Facção"></label>
+        <label class="f">Etapa<div class="combo" data-combo="etapas"><input id="s-etapa" autocomplete="off" placeholder="Buscar ou cadastrar etapa" role="combobox" aria-expanded="false"><div class="combo-list" hidden></div></div></label>
         <label class="f">Quem faz<input id="s-prest" placeholder="Ex.: Facção da Maria"></label>
         <label class="f">Cobrança<select id="s-tipo"><option value="peca">Por peça</option><option value="fechado">Valor fechado (dividido pelas peças do lote)</option></select></label>
         <label class="f"><span id="s-preco-lbl">Custo por peça</span><div class="money"><span>R$</span><input id="s-preco" inputmode="decimal" placeholder="0,00"></div></label>
@@ -399,7 +412,6 @@ tr.detail > td{background:var(--bg)}
       </table>
     </div>
   </section>
-  <datalist id="etapas"><option value="Modelagem"><option value="Corte"><option value="Facção"><option value="Travete"><option value="Lavanderia"><option value="Estamparia"><option value="Bordado"><option value="Acabamento"><option value="Passadoria"></datalist>
 
   <!-- INSUMOS -->
   <section id="view-insumos" hidden>
@@ -479,7 +491,7 @@ tr.detail > td{background:var(--bg)}
   <form class="modal-box" id="mm-form" autocomplete="off">
     <div class="modal-head"><h2 id="mm-title">Nova mão de obra</h2><button type="button" class="x-close" id="mm-close" aria-label="Fechar">×</button></div>
     <div class="fields">
-      <label class="f">Etapa<input id="mm-etapa" list="etapas" placeholder="Ex.: Facção"></label>
+      <label class="f">Etapa<div class="combo" data-combo="etapas"><input id="mm-etapa" autocomplete="off" placeholder="Buscar ou cadastrar etapa" role="combobox" aria-expanded="false"><div class="combo-list" hidden></div></div></label>
       <label class="f">Quem faz<input id="mm-prest" placeholder="Ex.: Facção da Maria"></label>
       <label class="f">Cobrança<select id="mm-tipo"><option value="peca">Por peça</option><option value="fechado">Valor fechado</option></select></label>
       <label class="f"><span id="mm-preco-lbl">Custo por peça</span><div class="money"><span>R$</span><input id="mm-preco" inputmode="decimal" placeholder="0,00"></div></label>
@@ -569,7 +581,7 @@ const savedTab=load("parllo-tab");if(savedTab&&$("view-"+savedTab))show(savedTab
 
 /* ================= ficha (referência + peças) ================= */
 const CAT_KIT="CNJ";
-const novaPeca=cat=>({id:null,categoria:cat,nome:"",sel:{cores:new Set(),tams:new Set()},comp:[],qtds:{},moItens:[],salva:false});
+const novaPeca=cat=>({id:null,fotoPath:null,fotoArquivo:null,fotoPreview:null,fotoRemover:false,categoria:cat,nome:"",sel:{cores:new Set(),tams:new Set()},comp:[],qtds:{},moItens:[],salva:false});
 const pecasCount=p=>{let s=0;for(const c of p.sel.cores)for(const t of p.sel.tams)s+=p.qtds[c+"|"+t]||0;return s};
 const moDe=p=>p.moItens.filter(x=>servDe(x.servicoId)).map(x=>({servicoId:x.servicoId,qtd:1}));
 const compDe=p=>p.comp.filter(c=>insDe(c.insumoId)&&Number(c.qtd)>0).map(c=>({insumoId:c.insumoId,qtd:Number(c.qtd)}));
@@ -597,10 +609,10 @@ function ativar(i){
   $("t-mo-lbl").textContent=modoComum?"Mão de obra por conjunto":"Mão de obra por peça";$("t-mo-un").textContent=modoComum?"conjuntos":"peças";
   $("t-ins-lbl").textContent=modoComum?"Insumos por conjunto":"Total de insumos";
   $("p-pecas-lbl").textContent=modoComum?"Conjuntos no lote":"Peças no lote";$("p-lucro-lbl").textContent=modoComum?"Margem sobre o comum":"Lucro por peça";$("mo-col-pc").textContent=modoComum?"Conjuntos":"Peças";$("p-var-box").hidden=modoComum;
-  if(modoComum){comp=comum.comp;moItens=comum.moItens;sel={cores:new Set(),tams:new Set()};qtds={};$("comum-n").textContent=pecasForm.length;buildSelects();renderTabs();renderComp();renderMO();preview();return}
+  if(modoComum){mostrarFoto(null);comp=comum.comp;moItens=comum.moItens;sel={cores:new Set(),tams:new Set()};qtds={};$("comum-n").textContent=pecasForm.length;buildSelects();renderTabs();renderComp();renderMO();preview();return}
   ativa=Math.max(0,Math.min(i,pecasForm.length-1));const p=pecasForm[ativa];
   sel=p.sel;comp=p.comp;qtds=p.qtds;moItens=p.moItens;
-  $("f-pnome").value=p.nome;
+  $("f-pnome").value=p.nome;mostrarFotoPeca();
   buildSelects();renderTabs();renderComp();renderMO();preview();
 }
 function setTipo(t){
@@ -618,7 +630,7 @@ document.querySelectorAll("#f-tipo button").forEach(b=>b.addEventListener("click
 function renderTabs(){
   const box=$("p-tabs");box.innerHTML="";
   pecasForm.forEach((p,i)=>box.append(el("button",{type:"button","aria-pressed":String(!modoComum&&i===ativa),onclick:()=>ativar(i)},
-    p.nome||nomeDe("categorias",p.categoria),el("small",{},`${p.categoria}-${pad(numAtual())}`))));
+    p.nome||nomeDe("categorias",p.categoria),el("small",{},`${p.categoria}-${pad(numAtual())}${(p.fotoPreview||(p.fotoPath&&!p.fotoRemover))?" · com foto":" · sem foto"}`))));
   const cc=custoComumForm();
   box.append(el("button",{type:"button","aria-pressed":String(modoComum),onclick:()=>ativar(-1)},"Custos comuns",el("small",{},cc?`${brl(cc)} ÷ ${pecasForm.length}`:"divididos entre as peças")));
   box.append(el("button",{type:"button",class:"add-p",onclick:()=>{
@@ -751,31 +763,48 @@ function preview(){
 $("f-margem").addEventListener("input",preview);
 $("p-copy").addEventListener("click",()=>{const p=pecasForm[ativa],{pai,vars}=skusFor(p.categoria,numAtual(),sel.cores,sel.tams);copy([pai,...vars.map(v=>v.sku)].join("\n"))});
 
-/* foto de referência */
-let fotoArquivo=null,fotoRemover=false;const fotoCache={};
+/* foto de referência (uma por peça) */
+const fotoCache={};
 function fotoUrl(path){if(!path)return Promise.resolve(null);if(!fotoCache[path])fotoCache[path]=sb.storage.from("parllo-fotos").createSignedUrl(path,3600).then(r=>r.data?.signedUrl||null).catch(()=>null);return fotoCache[path]}
 function mostrarFoto(src){$("f-foto-img").hidden=!src;$("f-foto-vazio").hidden=!!src;if(src)$("f-foto-img").src=src;$("f-foto-rem").hidden=!src}
+function mostrarFotoPeca(){
+  const p=pecasForm[ativa];if(!p||modoComum){mostrarFoto(null);return}
+  if(p.fotoPreview){mostrarFoto(p.fotoPreview);return}
+  if(p.fotoPath&&!p.fotoRemover){mostrarFoto(null);fotoUrl(p.fotoPath).then(u=>{if(pecasForm[ativa]===p&&!p.fotoPreview)mostrarFoto(u)});return}
+  mostrarFoto(null);
+}
 $("f-foto").addEventListener("change",e=>{
-  const f=e.target.files[0];if(!f)return;
-  if(f.size>10*1024*1024){toast("A foto passa de 10 MB. Use uma imagem menor.");e.target.value="";return}
-  fotoArquivo=f;fotoRemover=false;mostrarFoto(URL.createObjectURL(f));
+  const f=e.target.files[0];if(!f)return;e.target.value="";
+  if(f.size>10*1024*1024){toast("A foto passa de 10 MB. Use uma imagem menor.");return}
+  const p=pecasForm[ativa];p.fotoArquivo=f;p.fotoRemover=false;p.fotoPreview=URL.createObjectURL(f);mostrarFotoPeca();renderTabs();
 });
-$("f-foto-rem").addEventListener("click",()=>{fotoArquivo=null;fotoRemover=true;$("f-foto").value="";mostrarFoto(null)});
+$("f-foto-rem").addEventListener("click",()=>{const p=pecasForm[ativa];p.fotoArquivo=null;p.fotoPreview=null;p.fotoRemover=true;mostrarFotoPeca();renderTabs()});
+async function salvarFotoPeca(p,numero){
+  if(p.fotoArquivo){
+    const ext=(p.fotoArquivo.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+    const path=`${numero}/${p.categoria}-${Date.now()}.${ext}`;
+    const {error}=await sb.storage.from("parllo-fotos").upload(path,p.fotoArquivo,{contentType:p.fotoArquivo.type,upsert:false});
+    if(error)throw new Error(`Não foi possível enviar a foto de ${p.nome||p.categoria}: ${error.message}`);
+    if(p.fotoPath)sb.storage.from("parllo-fotos").remove([p.fotoPath]);
+    return path;
+  }
+  if(p.fotoRemover&&p.fotoPath){sb.storage.from("parllo-fotos").remove([p.fotoPath]);return null}
+  return p.fotoPath||null;
+}
 
 function resetForm(){
-  editing=null;$("form").reset();fotoArquivo=null;fotoRemover=false;mostrarFoto(null);
+  editing=null;$("form").reset();mostrarFoto(null);
   pecasForm=[novaPeca(tabelas.categorias.find(c=>c.cod!==CAT_KIT)?.cod||"VES")];comum={comp:[],moItens:[]};modoComum=false;
   $("f-margem").value=fmtPct(tabelas.margem);
   $("form-title").textContent="Nova referência";$("f-save").textContent="Salvar referência";$("f-cancel").hidden=true;$("f-msg").textContent="";
   setTipo("simples");ativar(0);
 }
 function editRef(r){
-  editing=r;show("novo");$("form").reset();fotoArquivo=null;fotoRemover=false;mostrarFoto(null);
-  if(r.fotoPath)fotoUrl(r.fotoPath).then(u=>{if(editing===r&&!fotoArquivo)mostrarFoto(u)});
+  editing=r;show("novo");$("form").reset();mostrarFoto(null);
   $("f-nome").value=r.tipo==="conjunto"?"":(r.nome||"");$("f-col").value=r.colecao||"";$("f-ncm").value=r.ncm||"";$("f-obs").value=r.obs||"";$("f-margem").value=fmtPct(r.margem);
   pecasForm=r.pecas.map(p=>{
     const qt={};Object.entries(p.quantidades||{}).forEach(([sku,q])=>{const s=sku.split("-");if(s.length>=4&&q>0)qt[s[2]+"|"+s.slice(3).join("-")]=Number(q)});
-    return {id:p.id,categoria:p.categoria,nome:p.nome||"",sel:{cores:new Set(p.cores||[]),tams:new Set(p.tamanhos||[])},comp:(p.composicao||[]).map(x=>({...x})),qtds:qt,moItens:(Array.isArray(p.maoDeObra)?p.maoDeObra:[]).map(x=>({...x})),salva:true};
+    return {id:p.id,fotoPath:p.fotoPath||null,fotoArquivo:null,fotoPreview:null,fotoRemover:false,categoria:p.categoria,nome:p.nome||"",sel:{cores:new Set(p.cores||[]),tams:new Set(p.tamanhos||[])},comp:(p.composicao||[]).map(x=>({...x})),qtds:qt,moItens:(Array.isArray(p.maoDeObra)?p.maoDeObra:[]).map(x=>({...x})),salva:true};
   });
   if(!pecasForm.length)pecasForm=[novaPeca(tabelas.categorias[0].cod)];
   comum={comp:(r.composicaoComum||[]).map(x=>({...x})),moItens:(r.maoDeObraComum||[]).map(x=>({...x}))};modoComum=false;
@@ -800,27 +829,19 @@ $("form").addEventListener("submit",async e=>{
   const numero=numAtual(),margem=readMargem();
   $("f-save").disabled=true;msg.textContent="Salvando…";
   try{
-    let fotoPath=editing?.fotoPath||null;
-    if(fotoArquivo){
-      const ext=(fotoArquivo.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
-      const path=`${numero}/${Date.now()}.${ext}`;
-      const {error}=await sb.storage.from("parllo-fotos").upload(path,fotoArquivo,{contentType:fotoArquivo.type,upsert:false});
-      if(error)throw new Error("Não foi possível enviar a foto: "+error.message);
-      if(fotoPath)sb.storage.from("parllo-fotos").remove([fotoPath]);
-      fotoPath=path;
-    }else if(fotoRemover&&fotoPath){sb.storage.from("parllo-fotos").remove([fotoPath]);fotoPath=null}
-    const ref={numero,tipo:tipoRef,nome,colecao:$("f-col").value.trim()||null,ncm:ncm||null,margem,foto_path:fotoPath,obs:$("f-obs").value.trim()||null,
+    const ref={numero,tipo:tipoRef,nome,colecao:$("f-col").value.trim()||null,ncm:ncm||null,margem,obs:$("f-obs").value.trim()||null,
       composicao_comum:tipoRef==="conjunto"?compDe(comum):[],mao_de_obra_comum:tipoRef==="conjunto"?moDe(comum):[],atualizado_em:new Date().toISOString()};
     if(editing)await q(sb.from("referencias").update(ref).eq("numero",numero));
     else await q(sb.from("referencias").insert(ref));
+    for(const p of pecasForm)p.fotoFinal=await salvarFotoPeca(p,numero);
     const linhas=pecasForm.map((p,i)=>{
       const pai=`${p.categoria}-${pad(numero)}`;
       return {id:p.id,row:{numero,ordem:i,categoria:p.categoria,nome:tipoRef==="conjunto"?p.nome.trim():nome,
         cores:[...p.sel.cores],tamanhos:[...p.sel.tams],
         quantidades:Object.fromEntries([...p.sel.cores].flatMap(c=>[...p.sel.tams].map(t=>[`${pai}-${c}-${t}`,p.qtds[c+"|"+t]||0])).filter(([,x])=>x>0)),
-        composicao:compDe(p),mao_de_obra:moDe(p),custo_no_cadastro:custoPecaForm(p),atualizado_em:new Date().toISOString()}};
+        composicao:compDe(p),mao_de_obra:moDe(p),custo_no_cadastro:custoPecaForm(p),foto_path:p.fotoFinal,atualizado_em:new Date().toISOString()}};
     });
-    if(editing){const ficam=new Set(linhas.map(l=>l.id).filter(Boolean));const sair=editing.pecas.filter(p=>!ficam.has(p.id)).map(p=>p.id);if(sair.length)await q(sb.from("pecas").delete().in("id",sair))}
+    if(editing){const ficam=new Set(linhas.map(l=>l.id).filter(Boolean));const saem=editing.pecas.filter(p=>!ficam.has(p.id));if(saem.length){await q(sb.from("pecas").delete().in("id",saem.map(p=>p.id)));const fs=saem.map(p=>p.fotoPath).filter(Boolean);if(fs.length)sb.storage.from("parllo-fotos").remove(fs)}}
     for(const l of linhas){if(l.id)await q(sb.from("pecas").update(l.row).eq("id",l.id));else await q(sb.from("pecas").insert(l.row))}
     toast(`${refLabel(tipoRef,pecasForm[0].categoria,numero)} ${editing?"atualizada":"salva"}`);
     await recarregar();resetForm();
@@ -850,8 +871,7 @@ function renderList(){
   rows.forEach(r=>{
     const custo=custoRef(r),base=precosDe(custo,r.margem),pc=precoCanal(base,canalSel),isOpen=openId===r.numero;
     const pecasLote=r.pecas.reduce((t,p)=>t+pecasDe(p),0);
-    const thumb=el("div",{class:"thumb vazia"},"—");
-    if(r.fotoPath)fotoUrl(r.fotoPath).then(u=>{if(u)thumb.replaceWith(el("img",{class:"thumb",src:u,alt:"Foto "+r.label}))});
+    const thumb=el("div",{class:"thumbs"},r.pecas.map(p=>{const t=el("div",{class:"thumb vazia",title:p.skuPai},"—");if(p.fotoPath)fotoUrl(p.fotoPath).then(u=>{if(u)t.replaceWith(el("img",{class:"thumb",src:u,alt:"Foto "+p.nome,title:p.skuPai}))});return t}));
     const actions=confirmDel===r.numero
       ?el("span",{class:"confirm"},"Excluir?",el("button",{class:"btn danger sm",onclick:e=>{e.stopPropagation();delRef(r)}},"Sim"),el("button",{class:"btn ghost sm",onclick:e=>{e.stopPropagation();confirmDel=null;renderList()}},"Não"))
       :el("span",{class:"row",style:"justify-content:flex-end"},
@@ -869,7 +889,8 @@ function renderList(){
         const pp=pecasDe(p),c=calc(p.composicao,p.maoDeObra,r.margem,pp),{vars}=skusFor(p.categoria,r.numero,p.cores||[],p.tamanhos||[]);
         const compLines=(p.composicao||[]).map(x=>{const i=insDe(x.insumoId);return el("div",{class:"kv"},el("span",{},`${i?i.nome:"Insumo removido"} × ${fmtQ(x.qtd)} ${i?.un||""}`),el("span",{},brl((i?.preco||0)*x.qtd)))});
         const moLines=(p.maoDeObra||[]).map(x=>{const sv=servDe(x.servicoId);return el("div",{class:"kv"},el("span",{},servNome(sv)+(sv?.tipo==="fechado"?` (${brl(sv.preco)} ÷ ${pp} pç)`:"")),el("span",{},`${brl(custoServPeca(sv,pp))}/pç`))});
-        return el("div",{class:"peca-det"},el("h4",{},`${p.skuPai} · ${p.nome}`),
+        const ft=el("div",{class:"thumb vazia"},"sem foto");if(p.fotoPath)fotoUrl(p.fotoPath).then(u=>{if(u)ft.replaceWith(el("img",{class:"thumb",src:u,alt:"Foto "+p.nome}))});
+        return el("div",{class:"peca-det"},el("div",{class:"row",style:"margin-bottom:8px"},ft,el("h4",{style:"margin:0"},`${p.skuPai} · ${p.nome}`)),
           el("div",{class:"grid"},
             el("div",{},el("div",{class:"row"},el("b",{},`SKUs (${vars.length})`),el("button",{class:"btn ghost sm",onclick:()=>copy([p.skuPai,...vars.map(v=>v.sku)].join("\n"))},"Copiar")),
               el("div",{class:"list"},vars.map(v=>{const q2=Number((p.quantidades||{})[v.sku])||0;return el("div",{},el("code",{class:"sku"},v.sku),el("span",{},`${nomeDe("cores",v.cor)} · ${v.tam}${q2?` · ${q2} pç`:""}`))}))),
@@ -907,7 +928,7 @@ $("q").addEventListener("input",renderList);$("q-cat").addEventListener("change"
 $("ex-canal").addEventListener("change",e=>{store("parllo-excanal",e.target.value);renderList()});
 $("ex-catpre").value=load("parllo-catpre")||"";$("ex-catpre").addEventListener("input",e=>store("parllo-catpre",e.target.value));
 async function delRef(r){
-  try{await q(sb.from("referencias").delete().eq("numero",r.numero));if(r.fotoPath)sb.storage.from("parllo-fotos").remove([r.fotoPath]);
+  try{await q(sb.from("referencias").delete().eq("numero",r.numero));const fs=r.pecas.map(p=>p.fotoPath).filter(Boolean);if(fs.length)sb.storage.from("parllo-fotos").remove(fs);
     confirmDel=null;openId=null;toast(`${r.label} excluída`);await recarregar()}catch(e){toast("Não foi possível excluir")}
 }
 
@@ -1090,6 +1111,43 @@ async function saveTabelas(patch){
 
 /* ================= início ================= */
 function renderAll(){if(!pecasForm.length)pecasForm=[novaPeca(tabelas.categorias.find(c=>c.cod!=="CNJ")?.cod||"VES")];buildSelects();renderTabs();renderComp();renderMO();preview();renderList();renderInsumos();renderServicos();renderCodes()}
+/* ================= etapas (lista com busca + cadastro) ================= */
+const ETAPAS_PADRAO=["Modelagem","Pilotagem","Corte","Facção","Travete","Caseado e botão","Lavanderia","Estamparia","Bordado","Acabamento","Passadoria"];
+function listaEtapas(){const base=Array.isArray(tabelas.etapas)?tabelas.etapas:ETAPAS_PADRAO;const usadas=servicos.map(s=>s.etapa);return [...new Set([...base,...usadas].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"))}
+const semAcento=t=>t.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+document.querySelectorAll('.combo[data-combo="etapas"]').forEach(box=>{
+  const inp=box.querySelector("input"),lst=box.querySelector(".combo-list");let idx=-1,itens=[];
+  function fechar(){lst.hidden=true;inp.setAttribute("aria-expanded","false");idx=-1}
+  function escolher(v){inp.value=v;fechar();inp.dispatchEvent(new Event("change"))}
+  async function cadastrar(v){
+    v=v.trim();if(!v)return;
+    const atual=listaEtapas();if(atual.some(e=>semAcento(e)===semAcento(v))){escolher(atual.find(e=>semAcento(e)===semAcento(v)));return}
+    await saveTabelas({etapas:[...(Array.isArray(tabelas.etapas)?tabelas.etapas:ETAPAS_PADRAO),v]});toast(`Etapa "${v}" cadastrada`);escolher(v);
+  }
+  function abrir(){
+    const termo=semAcento(inp.value.trim());lst.innerHTML="";
+    const todas=listaEtapas();itens=todas.filter(e=>!termo||semAcento(e).includes(termo));
+    itens.forEach((e,i)=>lst.append(el("button",{type:"button","aria-selected":String(i===idx),onmousedown:ev=>{ev.preventDefault();escolher(e)}},e)));
+    const v=inp.value.trim();
+    if(v&&!todas.some(e=>semAcento(e)===semAcento(v)))lst.append(el("button",{type:"button",class:"novo",onmousedown:ev=>{ev.preventDefault();cadastrar(v)}},`+ Cadastrar etapa "${v}"`));
+    if(!lst.children.length)lst.append(el("div",{class:"vazio"},"Digite o nome de uma etapa."));
+    lst.hidden=false;inp.setAttribute("aria-expanded","true");
+  }
+  inp.addEventListener("focus",()=>{idx=-1;abrir()});
+  inp.addEventListener("click",()=>{if(lst.hidden)abrir()});
+  inp.addEventListener("input",()=>{idx=-1;abrir()});
+  inp.addEventListener("blur",()=>setTimeout(fechar,120));
+  inp.addEventListener("keydown",e=>{
+    if(lst.hidden&&(e.key==="ArrowDown"||e.key==="Enter")){abrir();if(e.key==="Enter")e.preventDefault();return}
+    const total=itens.length+(lst.querySelector(".novo")?1:0);
+    if(e.key==="ArrowDown"){e.preventDefault();idx=Math.min(idx+1,total-1);marcar()}
+    else if(e.key==="ArrowUp"){e.preventDefault();idx=Math.max(idx-1,0);marcar()}
+    else if(e.key==="Enter"){e.preventDefault();if(idx>=0&&idx<itens.length)escolher(itens[idx]);else if(idx===itens.length||(!itens.length&&inp.value.trim()))cadastrar(inp.value);else if(itens.length===1)escolher(itens[0])}
+    else if(e.key==="Escape"){e.stopPropagation();fechar()}
+  });
+  function marcar(){[...lst.querySelectorAll("button")].forEach((b,i)=>b.setAttribute("aria-selected",String(i===idx)));lst.querySelectorAll("button")[idx]?.scrollIntoView({block:"nearest"})}
+});
+
 /* ================= mão de obra ================= */
 function renderMO(){
   const box=$("mo-list");box.innerHTML="";
@@ -1182,9 +1240,9 @@ $("mm-form").addEventListener("submit",async e=>{
 /* ================= banco (Supabase) ================= */
 async function q(p){const {data,error}=await p;if(error)throw error;return data}
 const toPeca=r=>({id:r.id,numero:r.numero,ordem:r.ordem,categoria:r.categoria,skuPai:r.sku_pai,nome:r.nome,cores:r.cores||[],tamanhos:r.tamanhos||[],
-  quantidades:r.quantidades||{},composicao:r.composicao||[],maoDeObra:Array.isArray(r.mao_de_obra)?r.mao_de_obra:[],olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em});
+  quantidades:r.quantidades||{},fotoPath:r.foto_path||null,composicao:r.composicao||[],maoDeObra:Array.isArray(r.mao_de_obra)?r.mao_de_obra:[],olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em});
 const toRef=(r,pecas)=>{const ps=pecas.filter(p=>p.numero===r.numero).sort((a,b)=>a.ordem-b.ordem);
-  return {numero:r.numero,tipo:r.tipo,nome:r.nome,colecao:r.colecao||"",ncm:r.ncm||"",margem:Number(r.margem)||0,fotoPath:r.foto_path,obs:r.obs||"",
+  return {numero:r.numero,tipo:r.tipo,nome:r.nome,colecao:r.colecao||"",ncm:r.ncm||"",margem:Number(r.margem)||0,obs:r.obs||"",
     olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em,pecas:ps,
     composicaoComum:r.composicao_comum||[],maoDeObraComum:r.mao_de_obra_comum||[],
     label:r.tipo==="conjunto"?`Conjunto ${pad(r.numero)}`:`${nomeDe("categorias",ps[0]?.categoria||"")} ${pad(r.numero)}`}};
@@ -1204,7 +1262,7 @@ let primeiraCarga=true;
 async function recarregar(){
   try{
     const [cfg,ins,rfs,pcs,srv]=await Promise.all([q(sb.from("config").select("dados").eq("id",1).maybeSingle()),q(sb.from("insumos").select("*")),q(sb.from("referencias").select("*").order("numero",{ascending:false})),q(sb.from("pecas").select("*")),q(sb.from("servicos").select("*"))]);
-    if(cfg?.dados){const d=cfg.dados;tabelas={categorias:d.categorias||tabelas.categorias,cores:d.cores||tabelas.cores,tamanhos:d.tamanhos||tabelas.tamanhos,canais:d.canais||tabelas.canais,simples:d.simples??tabelas.simples,margem:d.margem??tabelas.margem}}
+    if(cfg?.dados){const d=cfg.dados;tabelas={categorias:d.categorias||tabelas.categorias,cores:d.cores||tabelas.cores,tamanhos:d.tamanhos||tabelas.tamanhos,canais:d.canais||tabelas.canais,simples:d.simples??tabelas.simples,margem:d.margem??tabelas.margem,etapas:d.etapas}}
     insumos=ins.map(toInsumo);servicos=srv.map(toServico);const ps=pcs.map(toPeca);refs=rfs.map(r=>toRef(r,ps));modelos=ps;
     if(primeiraCarga){renderTaxas();primeiraCarga=false;if(!editing){renderAll();resetForm()}}
     $("offline").hidden=true;$("status").textContent="Salvo na nuvem";renderAll();
