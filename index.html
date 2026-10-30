@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#5E3553">
+<title>PARLLO SKU e Custos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: cabeçalho fixo com abas; formulário de ficha técnica + painel de SKUs e preços lado a lado no desktop */
+:root{
+  --bg:#F6F5F7; --surface:#FFFFFF; --ink:#1F1B22; --muted:#6E6873; --line:#E3DFE6;
+  --accent:#5E3553; --accent-soft:#EFE6ED; --ok:#2E6B4F; --warn:#9A3B2E; --chip:#F0EEF2; --scrim:rgba(22,18,24,.55);
+  --f-display:"Bodoni Moda", "Didot", Georgia, serif;
+  --f-body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161318; --surface:#1F1B22; --ink:#EEEAF0; --muted:#A49CA9; --line:#332D37;
+  --accent:#D7A8C8; --accent-soft:#3A2836; --ok:#7CC6A2; --warn:#E89A8C; --chip:#2A252D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161318; --surface:#1F1B22; --ink:#EEEAF0; --muted:#A49CA9; --line:#332D37;
+  --accent:#D7A8C8; --accent-soft:#3A2836; --ok:#7CC6A2; --warn:#E89A8C; --chip:#2A252D; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.login{max-width:400px;margin:8vh auto 0}
+.login h2{margin-bottom:6px}
+.pill.ok{color:var(--ok)} .pill.err{color:var(--warn)}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);color:var(--muted);font:600 13px var(--f-body);padding:9px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.ref-grid{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:560px){.ref-grid{grid-template-columns:1fr}}
+.foto-col{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.foto{width:150px;max-width:100%;aspect-ratio:3/4;border:1px dashed var(--line);border-radius:8px;background:var(--bg);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px}
+.foto img{width:100%;height:100%;object-fit:cover}
+.foto-btn{display:inline-block}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:8px;padding:8px 12px;font:600 13px var(--f-body);cursor:pointer;text-align:left}
+.tabs button small{display:block;font:500 11px var(--f-mono);color:var(--muted)}
+.tabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tabs button.add-p{border-style:dashed;background:transparent;color:var(--accent)}
+.thumb{width:48px;height:64px;border-radius:6px;background:var(--bg);border:1px solid var(--line);object-fit:cover;display:block}
+.thumb.vazia{display:grid;place-items:center;font-size:10px;color:var(--muted)}
+.sku-chips{display:flex;flex-wrap:wrap;gap:4px}
+.sku-chips code{font:500 12px var(--f-mono);background:var(--chip);padding:2px 6px;border-radius:5px}
+.peca-det{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.peca-det:first-child{border-top:0;margin-top:0;padding-top:0}
+.peca-det h4{margin:0 0 8px;font-size:14px}
+.olist-err{white-space:pre-wrap;font-size:12px;color:var(--warn);margin:8px 0 0}
+.gradewrap{overflow-x:auto}
+table.grade{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.grade th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:6px 6px;text-align:center}
+table.grade th:first-child{text-align:left}
+table.grade td{padding:4px 6px;text-align:center;border-top:1px solid var(--line)}
+table.grade td:first-child{text-align:left;font-weight:600;white-space:nowrap}
+table.grade input{width:64px;text-align:center;padding:7px 6px}
+table.grade .tot{color:var(--muted);font-weight:700}
+.grade-sum{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}
+.grade-sum b{color:var(--ink);font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:14px 0}
+.brand{font-family:var(--f-display);font-size:24px;letter-spacing:.18em;font-weight:500}
+.brand small{font-family:var(--f-body);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-left:10px;text-transform:uppercase}
+.status{font-size:12px;color:var(--muted)}
+nav{display:flex;gap:4px;overflow-x:auto;padding-top:10px}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;font:600 13px var(--f-body);color:var(--muted);cursor:pointer;letter-spacing:.04em;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+main{padding-block:24px 64px}
+h2{font-family:var(--f-display);font-weight:500;font-size:26px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 20px;max-width:64ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+aside.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 110px)}
+@media (max-width:860px){aside.panel{position:static}}
+.panel h3{margin:0 0 14px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.panel h3.sp{margin-top:26px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fields .full{grid-column:1/-1}
+@media (max-width:520px){.fields,.fields.three{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--muted);min-width:0}
+input,select,textarea{font:500 15px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 11px;width:100%;box-sizing:border-box;min-width:0}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.money{position:relative}
+.money input{padding-left:34px;text-align:right;font-variant-numeric:tabular-nums}
+.money span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+.pct{position:relative}
+.pct input{padding-right:28px;text-align:right;font-variant-numeric:tabular-nums}
+.pct span{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 11px;font:600 12px var(--f-body);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip code{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.chip[aria-pressed="true"] code{color:var(--surface);opacity:.8}
+.section{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.section > b{font-size:12px;color:var(--muted)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:7px;padding:10px 16px;font:700 13px var(--f-body);cursor:pointer;letter-spacing:.03em;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:transparent;border-color:var(--warn);color:var(--warn)}
+.btn.sm{padding:6px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;color:var(--accent);font:600 12px var(--f-body);cursor:pointer;padding:0;text-decoration:underline}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sku{font-family:var(--f-mono);font-size:13px;letter-spacing:.02em}
+.parent{font-family:var(--f-mono);font-size:26px;color:var(--accent);margin:2px 0 4px}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;margin-top:14px}
+.total b{font-size:20px;font-variant-numeric:tabular-nums}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;padding:3px 0}
+.kv b{color:var(--ink)}
+.kv.strong{color:var(--ink);font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:7px}
+.list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:7px;margin-top:10px}
+.list div{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line)}
+.list div:last-child{border-bottom:0}
+.list span{color:var(--muted);font-size:12px}
+.empty{color:var(--muted);font-size:13px;padding:10px}
+/* composição */
+.comp{display:flex;flex-direction:column;gap:8px}
+.comp-row{display:grid;grid-template-columns:minmax(0,1fr) 104px 96px 28px;gap:8px;align-items:center}
+.comp-row .sub{text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.comp-row .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:18px;line-height:1}
+.comp-head{display:grid;grid-template-columns:minmax(0,1fr) 104px 96px 28px;gap:8px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.comp-head span:nth-child(3){text-align:right}
+@media (max-width:520px){.comp-row,.comp-head{grid-template-columns:minmax(0,1fr) 70px 80px 24px}}
+/* canais */
+.prices{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.prices td{padding:6px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.prices td:last-child{text-align:right;font-weight:700}
+.prices tr:last-child td{border-bottom:0}
+.prices small{color:var(--muted);font-weight:500}
+/* tabelas */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.toolbar input{flex:1 1 220px;width:auto}
+.toolbar select{flex:0 1 200px;width:auto}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table.t{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+table.t th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line);font-weight:700}
+table.t td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.open > td{background:var(--accent-soft)}
+tr.detail > td{background:var(--bg)}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);font-weight:600}
+.codes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:900px){.codes{grid-template-columns:1fr}}
+.code-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.code-row code{font-family:var(--f-mono);font-size:12px;background:var(--chip);padding:2px 7px;border-radius:5px;min-width:42px;text-align:center}
+.code-row span{flex:1;min-width:0}
+.code-row button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px}
+.add{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.add input{flex:1 1 120px;width:auto}
+.add input.cod{flex:0 0 80px;font-family:var(--f-mono);text-transform:uppercase}
+.canal-row{display:grid;grid-template-columns:minmax(0,1fr) 96px 110px 28px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+@media (max-width:520px){.canal-row{grid-template-columns:minmax(0,1fr) 80px 96px 24px}}
+.ins-price{max-width:130px}
+.qty{position:relative}
+.qty input{padding-right:40px;text-align:right;font-variant-numeric:tabular-nums}
+.qty span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px}
+.ins-in{max-width:120px}
+.unit-hint{font-size:12px;color:var(--muted);margin:-4px 0 12px}
+.modal{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+.modal-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:560px;max-height:100%;overflow:auto;box-sizing:border-box}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.modal-head h2{font-size:22px;margin:0}
+.x-close{background:none;border:0;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.confirm{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--warn)}
+.note{font-size:12px;color:var(--muted);margin:8px 0 0}
+.banner{background:var(--accent-soft);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head">
+      <div class="brand">PARLLO<small>SKU e custos</small></div>
+      <div class="row">
+        <span class="status" id="status">Conectando…</span>
+        <button class="btn ghost sm" type="button" id="olist-btn" hidden>Olist</button>
+        <button class="link" type="button" id="sair" hidden>Sair</button>
+      </div>
+    </div>
+    <nav role="tablist" id="nav" hidden>
+      <button role="tab" id="tab-novo" data-view="novo" aria-selected="true">Ficha</button>
+      <button role="tab" id="tab-modelos" data-view="modelos" aria-selected="false">Referências</button>
+      <button role="tab" id="tab-insumos" data-view="insumos" aria-selected="false">Insumos</button>
+      <button role="tab" id="tab-mo" data-view="mo" aria-selected="false">Mão de obra</button>
+      <button role="tab" id="tab-config" data-view="config" aria-selected="false">Códigos e taxas</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="offline" class="banner" hidden>Não foi possível falar com o banco de dados. Verifique a internet e recarregue a página.</div>
+
+  <!-- LOGIN -->
+  <section id="view-login" hidden>
+    <form class="panel login" id="login-form" autocomplete="on">
+      <h2>Entrar</h2>
+      <p class="lead">Use o e-mail autorizado da PARLLO.</p>
+      <div class="fields">
+        <label class="f full">E-mail<input id="l-email" type="email" autocomplete="username" required></label>
+        <label class="f full">Senha<input id="l-senha" type="password" autocomplete="current-password" minlength="6" required></label>
+      </div>
+      <div class="row" style="margin-top:18px">
+        <button class="btn" type="submit" id="l-entrar">Entrar</button>
+        <button class="btn ghost" type="button" id="l-criar">Criar conta</button>
+      </div>
+      <p class="note" id="l-msg"></p>
+    </form>
+  </section>
+
+  <!-- FICHA -->
+  <section id="view-novo" hidden>
+    <h2 id="form-title">Nova referência</h2>
+    <p class="lead">Cada referência tem um número (ex.: Calça 0001). Um conjunto guarda cada peça separada, com ficha e SKU próprios, mantendo o mesmo número. Os preços são calculados sem custo fixo.</p>
+    <div class="grid">
+      <form class="stack" id="form" autocomplete="off">
+        <div class="panel">
+          <h3>Referência</h3>
+          <div class="seg" id="f-tipo">
+            <button type="button" data-tipo="simples" aria-pressed="true">Peça avulsa</button>
+            <button type="button" data-tipo="conjunto" aria-pressed="false">Conjunto (vendido como kit)</button>
+          </div>
+          <div class="ref-grid">
+            <div class="foto-col">
+              <div class="foto" id="f-foto-box"><img id="f-foto-img" alt="Foto de referência" hidden><span id="f-foto-vazio">Sem foto</span></div>
+              <label class="btn ghost sm foto-btn" for="f-foto">Escolher foto</label>
+              <input type="file" id="f-foto" accept="image/jpeg,image/png,image/webp" hidden>
+              <button type="button" class="link" id="f-foto-rem" hidden>Remover foto</button>
+            </div>
+            <div class="fields">
+              <label class="f">Referência<input id="f-ref" readonly></label>
+              <label class="f">Nº<input id="f-num" readonly></label>
+              <label class="f full" id="f-nome-box">Nome do produto<input id="f-nome" placeholder="Ex.: Calça wide linho"></label>
+              <label class="f">Coleção (opcional)<input id="f-col" placeholder="Ex.: Verão 27"></label>
+              <label class="f">NCM (para a Olist)<input id="f-ncm" inputmode="numeric" maxlength="10" placeholder="8 dígitos"></label>
+              <label class="f">Margem sobre o custo<div class="pct"><input id="f-margem" inputmode="decimal"><span>%</span></div></label>
+              <label class="f">Venda mínima<input id="f-vmin" readonly></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="pecas-panel" hidden>
+          <h3>Peças do conjunto</h3>
+          <p class="unit-hint">Monte a ficha de cada peça, com nome próprio. Todas usam o mesmo número; o SKU muda pela categoria (ex.: TOP-0005 e SAI-0005).</p>
+          <div class="tabs" id="p-tabs"></div>
+        </div>
+
+        <div class="panel banner" id="comum-info" hidden style="margin:0">
+          <b>Custos comuns do conjunto</b><br>Lance aqui o que é do conjunto inteiro (ex.: embalagem, tag, facção ou modelagem do conjunto). Aviamentos de uma peça só, como botões da camisa ou elástico da calça, ficam na ficha da própria peça. O total é dividido igualmente entre as <span id="comum-n">2</span> peças.
+        </div>
+        <div class="panel" id="peca-panel">
+          <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0" id="peca-titulo">Peça</h3><span id="peca-rem-box"></span></div>
+          <div class="fields">
+            <label class="f">Categoria<select id="f-cat"></select></label>
+            <label class="f" id="f-pnome-box" hidden>Nome do produto (desta peça)<input id="f-pnome" placeholder="Ex.: Top faixa linho"></label>
+          </div>
+          <div class="section"><div class="row" style="justify-content:space-between"><b>Cores</b><button class="link" type="button" data-qa="cores">+ nova cor</button></div>
+            <div class="chips" id="f-cores"></div>
+            <div class="add" id="qa-cores" hidden><input class="cod" id="qa-cores-cod" maxlength="3" placeholder="Cód."><input id="qa-cores-nome" placeholder="Nome da cor"><button class="btn sm" type="button" data-qa-save="cores">Adicionar cor</button></div></div>
+          <div class="section"><div class="row" style="justify-content:space-between"><b>Tamanhos</b><button class="link" type="button" data-qa="tamanhos">+ novo tamanho</button></div>
+            <div class="chips" id="f-tams"></div>
+            <div class="add" id="qa-tamanhos" hidden><input class="cod" id="qa-tamanhos-cod" maxlength="3" placeholder="Cód."><input id="qa-tamanhos-nome" placeholder="Nome do tamanho"><button class="btn sm" type="button" data-qa-save="tamanhos">Adicionar tamanho</button></div></div>
+        </div>
+
+        <div class="panel" id="grade-panel">
+          <h3>Quantidade de peças</h3>
+          <p class="unit-hint">Quantas peças de cada cor e tamanho foram produzidas. No primeiro envio, vira o estoque inicial de cada variação na Olist.</p>
+          <div id="f-grade"></div>
+        </div>
+
+        <div class="panel">
+          <h3 id="comp-tit">Composição (insumos por peça)</h3>
+          <p class="unit-hint" id="comp-hint">Em Consumo, informe quanto vai em uma peça, na unidade do insumo. Ex.: 1,35 m de tecido, 1 un de zíper.</p>
+          <div class="comp-head"><span>Insumo</span><span>Consumo</span><span>Subtotal</span><span></span></div>
+          <div class="comp" id="comp"></div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn ghost sm" type="button" id="comp-add">Adicionar insumo</button>
+            <button class="link" type="button" id="go-insumos">Cadastrar insumo novo</button>
+          </div>
+          <div class="total"><span id="t-ins-lbl">Total de insumos</span><b id="t-ins">R$ 0,00</b></div>
+        </div>
+
+        <div class="panel">
+          <h3 id="mo-tit">Mão de obra</h3>
+          <p class="unit-hint" id="mo-hint">Escolha as etapas e quem faz. A quantidade é o total de peças do lote, preenchido na grade de quantidades.</p>
+          <div class="comp-head"><span>Etapa · quem faz</span><span id="mo-col-pc">Peças</span><span>Total</span><span></span></div>
+          <div class="comp" id="mo-list"></div>
+          <p class="note" id="mo-aviso" hidden style="color:var(--warn)">Tem mão de obra de valor fechado: preencha a grade de quantidades para dividir o valor pelas peças.</p>
+          <div class="row" style="margin-top:12px">
+            <button class="btn ghost sm" type="button" id="mo-add">Adicionar mão de obra</button>
+            <button class="link" type="button" id="go-mo">Cadastrar mão de obra nova</button>
+          </div>
+          <div class="total"><span id="t-mo-lbl">Mão de obra por peça</span><b id="t-mo">R$ 0,00</b></div>
+          <div class="kv"><span>Mão de obra do lote (<span id="t-mo-pc">0</span> <span id="t-mo-un">peças</span>)</span><b id="t-mo-lote">R$ 0,00</b></div>
+        </div>
+
+        <div class="panel">
+          <h3>Salvar</h3>
+          <label class="f">Observações<textarea id="f-obs" rows="2"></textarea></label>
+          <div class="row" style="margin-top:20px">
+            <button class="btn" type="submit" id="f-save">Salvar referência</button>
+            <button class="btn ghost" type="button" id="f-cancel" hidden>Cancelar edição</button>
+          </div>
+          <p class="note" id="f-msg"></p>
+        </div>
+      </form>
+
+      <aside class="panel" aria-live="polite">
+        <h3>Referência</h3>
+        <div class="parent" id="p-ref">—</div>
+        <div id="p-kit-box" hidden>
+          <div class="kv"><span>SKU do kit</span><code class="sku" id="p-kit-sku"></code></div>
+          <div id="p-kit-pecas"></div>
+          <div class="kv" id="p-kit-comum"><span>Custos comuns (por conjunto)</span><span id="p-kit-comum-v">R$ 0,00</span></div>
+          <div class="kv strong"><span>Custo do conjunto</span><span id="p-kit-custo">R$ 0,00</span></div>
+          <div class="kv"><span>Kits possíveis (cor × tamanho em comum)</span><span id="p-kit-combos">0</span></div>
+        </div>
+        <h3 class="sp" id="p-precos-tit">Preço por canal</h3>
+        <table class="prices"><tbody id="p-prices"></tbody></table>
+        <h3 class="sp" id="p-peca-tit">Peça</h3>
+        <div class="kv"><span>SKU pai</span><code class="sku" id="p-parent">—</code></div>
+        <div class="kv"><span>Insumos</span><span id="p-ins">R$ 0,00</span></div>
+        <div class="kv"><span>Mão de obra</span><span id="p-mo">R$ 0,00</span></div>
+        <div class="kv" id="p-comum-row" hidden><span>Parte dos custos comuns (÷ <span id="p-comum-n">2</span>)</span><span id="p-comum">R$ 0,00</span></div>
+        <div class="kv strong"><span>Custo de produção</span><span id="p-cost">R$ 0,00</span></div>
+        <div class="kv"><span id="p-lucro-lbl">Lucro por peça</span><span id="p-lucro">R$ 0,00</span></div>
+        <div class="kv strong"><span id="p-pecas-lbl">Peças no lote</span><span id="p-pecas">0</span></div>
+        <div class="kv"><span>Custo do lote</span><span id="p-lote">R$ 0,00</span></div>
+        <div id="p-var-box"><h3 class="sp">Variações (<span id="p-count">0</span>)</h3>
+        <button class="btn ghost sm" type="button" id="p-copy">Copiar SKUs</button>
+        <div class="list" id="p-list"><div class="empty">Selecione ao menos uma cor e um tamanho.</div></div></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- MODELOS -->
+  <section id="view-modelos" hidden>
+    <h2>Referências salvas</h2>
+    <p class="lead">Clique em uma referência para ver as peças, os SKUs e a composição do custo. Os custos usam o preço atual de cada insumo e mão de obra.</p>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Buscar por referência, SKU, nome ou coleção">
+      <select id="q-cat"><option value="">Todas as categorias</option></select>
+    </div>
+    <div class="tablewrap">
+      <table class="t">
+        <thead id="thead"></thead>
+        <tbody id="tbody"><tr><td class="empty">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="kv" style="margin-top:12px" id="sumline"></div>
+
+    <div class="panel" style="margin-top:24px">
+      <h3>Olist e exportação</h3>
+      <div class="fields">
+        <label class="f">Preço de venda enviado à Olist<select id="ex-canal"></select></label>
+        <label class="f">Categoria na Olist (prefixo)<input id="ex-catpre" placeholder="Ex.: Feminino"></label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" type="button" id="ex-olist">Baixar CSV da Olist</button>
+        <button class="btn ghost" type="button" id="ex-full">Exportar planilha de custos</button>
+      </div>
+      <p class="note">O botão Enviar em cada referência cria ou atualiza as peças direto na Olist, com variações de cor e tamanho, o preço escolhido acima, o preço de custo e a tag PARLLO. No conjunto, também cria o kit CNJ com as peças. O CSV traz só as peças (o kit é montado pelo envio direto).</p>
+    </div>
+  </section>
+
+  <!-- MAO DE OBRA -->
+  <section id="view-mo" hidden>
+    <h2>Mão de obra</h2>
+    <p class="lead">Cada etapa da produção, quem faz e quanto custa. Cobre por peça ou por valor fechado: o valor fechado é dividido pelo total de peças de cada lote. Ao mudar um valor aqui, todos os modelos que usam essa mão de obra são recalculados.</p>
+    <div class="panel" style="margin-bottom:20px">
+      <h3>Nova mão de obra</h3>
+      <div class="fields three">
+        <label class="f">Etapa<input id="s-etapa" list="etapas" placeholder="Ex.: Facção"></label>
+        <label class="f">Quem faz<input id="s-prest" placeholder="Ex.: Facção da Maria"></label>
+        <label class="f">Cobrança<select id="s-tipo"><option value="peca">Por peça</option><option value="fechado">Valor fechado (dividido pelas peças do lote)</option></select></label>
+        <label class="f"><span id="s-preco-lbl">Custo por peça</span><div class="money"><span>R$</span><input id="s-preco" inputmode="decimal" placeholder="0,00"></div></label>
+        <label class="f">Descrição (opcional)<input id="s-desc" placeholder="Ex.: costura completa de vestido"></label>
+      </div>
+      <div class="row" style="margin-top:16px"><button class="btn" type="button" id="s-add">Adicionar mão de obra</button></div>
+    </div>
+    <div class="toolbar"><input id="sq" type="search" placeholder="Buscar por etapa ou quem faz"></div>
+    <div class="tablewrap">
+      <table class="t">
+        <thead><tr><th>Etapa</th><th>Quem faz</th><th>Descrição</th><th>Cobrança</th><th class="num">Valor</th><th></th></tr></thead>
+        <tbody id="sbody"></tbody>
+      </table>
+    </div>
+  </section>
+  <datalist id="etapas"><option value="Modelagem"><option value="Corte"><option value="Facção"><option value="Travete"><option value="Lavanderia"><option value="Estamparia"><option value="Bordado"><option value="Acabamento"><option value="Passadoria"></datalist>
+
+  <!-- INSUMOS -->
+  <section id="view-insumos" hidden>
+    <h2>Insumos</h2>
+    <p class="lead">Tecidos, aviamentos, etiquetas e embalagens com o preço por unidade. Ao mudar um preço aqui, o custo de todos os modelos que usam o insumo é atualizado.</p>
+    <div class="panel" style="margin-bottom:20px">
+      <h3>Novo insumo</h3>
+      <div class="fields three">
+        <label class="f">Descrição<input id="i-nome" placeholder="Ex.: Tecido linho misto"></label>
+        <label class="f">Unidade de medida<select id="i-un"><option value="m">metro (m)</option><option value="un">unidade (un)</option><option value="kg">quilo (kg)</option><option value="cm">centímetro (cm)</option><option value="par">par</option></select></label>
+        <label class="f">Fornecedor (opcional)<input id="i-forn"></label>
+        <label class="f">Quantidade comprada<div class="qty"><input id="i-qtd" inputmode="decimal" placeholder="Ex.: 50"><span id="i-qtd-un">m</span></div></label>
+        <label class="f">Valor pago (total)<div class="money"><span>R$</span><input id="i-total" inputmode="decimal" placeholder="0,00"></div></label>
+        <label class="f">Preço por unidade<input id="i-unit" readonly placeholder="calculado"></label>
+        <label class="f">Cor (opcional)<input id="i-cor"></label>
+      </div>
+      <div class="row" style="margin-top:16px"><button class="btn" type="button" id="i-add">Adicionar insumo</button></div>
+      <p class="note">Ex.: rolo de 50 m por R$ 1.250,00 dá R$ 25,00 por metro. Para itens avulsos, use quantidade 1 e o preço da unidade.</p>
+    </div>
+    <div class="toolbar"><input id="iq" type="search" placeholder="Buscar insumo"></div>
+    <div class="tablewrap">
+      <table class="t">
+        <thead><tr><th>Descrição</th><th>Fornecedor</th><th class="num">Comprado</th><th class="num">Valor pago</th><th class="num">Preço por unidade</th><th>Usado em</th><th></th></tr></thead>
+        <tbody id="ibody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="view-config" hidden>
+    <h2>Códigos e taxas</h2>
+    <p class="lead">As tabelas que formam o SKU e as taxas usadas no preço de cada canal. Códigos em uso por algum modelo não podem ser removidos.</p>
+    <div class="panel" style="margin-bottom:20px">
+      <h3>Impostos e canais de venda</h3>
+      <div class="fields">
+        <label class="f">Imposto (Simples), vale para todos os canais<div class="pct"><input id="cfg-simples" inputmode="decimal"><span>%</span></div></label>
+        <label class="f">Margem padrão de novos modelos<div class="pct"><input id="cfg-margem" inputmode="decimal"><span>%</span></div></label>
+      </div>
+      <div class="section"><b>Canais: tarifa em % do preço e tarifa fixa por venda</b>
+        <div id="cfg-canais"></div>
+        <div class="add"><input id="cn-nome" placeholder="Nome do canal"><button class="btn ghost sm" type="button" id="cn-add">Adicionar canal</button></div>
+      </div>
+      <div class="row" style="margin-top:16px"><button class="btn" type="button" id="cfg-save">Salvar taxas</button></div>
+      <p class="note">Preço do canal = (venda mínima + tarifa fixa) ÷ (1 − imposto − tarifa %).</p>
+    </div>
+    <div class="codes">
+      <div class="panel"><h3>Categorias (3 letras)</h3><div id="c-cat"></div>
+        <div class="add"><input class="cod" id="c-cat-cod" maxlength="3" placeholder="VES"><input id="c-cat-nome" placeholder="Vestido"><button class="btn sm" type="button" data-add="categorias">Adicionar</button></div></div>
+      <div class="panel"><h3>Cores (3 caracteres)</h3><div id="c-cor"></div>
+        <div class="add"><input class="cod" id="c-cor-cod" maxlength="3" placeholder="PRT"><input id="c-cor-nome" placeholder="Preto"><button class="btn sm" type="button" data-add="cores">Adicionar</button></div></div>
+      <div class="panel"><h3>Tamanhos (ordem de exibição)</h3><div id="c-tam"></div>
+        <div class="add"><input class="cod" id="c-tam-cod" maxlength="3" placeholder="GG"><input id="c-tam-nome" placeholder="Extra grande"><button class="btn sm" type="button" data-add="tamanhos">Adicionar</button></div></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <form class="modal-box" id="m-form" autocomplete="off">
+    <div class="modal-head"><h2 id="modal-title">Novo insumo</h2><button type="button" class="x-close" id="m-close" aria-label="Fechar">×</button></div>
+    <div class="fields">
+      <label class="f full">Descrição<input id="m-nome" placeholder="Ex.: Tecido linho misto"></label>
+      <label class="f">Unidade de medida<select id="m-un"><option value="m">metro (m)</option><option value="un">unidade (un)</option><option value="kg">quilo (kg)</option><option value="cm">centímetro (cm)</option><option value="par">par</option></select></label>
+      <label class="f">Fornecedor (opcional)<input id="m-forn"></label>
+      <label class="f">Quantidade comprada<div class="qty"><input id="m-qtd" inputmode="decimal" placeholder="Ex.: 50"><span id="m-qtd-un">m</span></div></label>
+      <label class="f">Valor pago (total)<div class="money"><span>R$</span><input id="m-total" inputmode="decimal" placeholder="0,00"></div></label>
+      <label class="f">Preço por unidade<input id="m-unit" readonly placeholder="calculado"></label>
+      <label class="f">Cor (opcional)<input id="m-cor"></label>
+    </div>
+    <div class="row" style="margin-top:20px">
+      <button class="btn" type="submit" id="m-save">Salvar e adicionar à ficha</button>
+      <button class="btn ghost" type="button" id="m-cancel">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal" id="modal-mo" hidden role="dialog" aria-modal="true" aria-labelledby="mm-title">
+  <form class="modal-box" id="mm-form" autocomplete="off">
+    <div class="modal-head"><h2 id="mm-title">Nova mão de obra</h2><button type="button" class="x-close" id="mm-close" aria-label="Fechar">×</button></div>
+    <div class="fields">
+      <label class="f">Etapa<input id="mm-etapa" list="etapas" placeholder="Ex.: Facção"></label>
+      <label class="f">Quem faz<input id="mm-prest" placeholder="Ex.: Facção da Maria"></label>
+      <label class="f">Cobrança<select id="mm-tipo"><option value="peca">Por peça</option><option value="fechado">Valor fechado</option></select></label>
+      <label class="f"><span id="mm-preco-lbl">Custo por peça</span><div class="money"><span>R$</span><input id="mm-preco" inputmode="decimal" placeholder="0,00"></div></label>
+      <label class="f full">Descrição (opcional)<input id="mm-desc"></label>
+    </div>
+    <div class="row" style="margin-top:20px">
+      <button class="btn" type="submit" id="mm-save">Salvar e adicionar à ficha</button>
+      <button class="btn ghost" type="button" id="mm-cancel">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(() => {
+/* ================= conexão ================= */
+const SUPA_URL = "https://jeuzputmdxuekxurvyzv.supabase.co";
+const SUPA_KEY = "sb_publishable_6vDuV_H1noWGIbcbqMU5Mw_sVCRVLCr";
+/* ================= dados padrão ================= */
+const DEF = {
+  categorias:[["VES","Vestido"],["BLU","Blusa"],["CAM","Camisa"],["TOP","Top / cropped"],["BOD","Body"],["SAI","Saia"],["CAL","Calça"],["SHO","Short"],["MAC","Macacão"],["CNJ","Conjunto"],["BLZ","Blazer"],["CAS","Casaco"],["KIM","Kimono"]],
+  cores:[["PRT","Preto"],["BRC","Branco"],["OFF","Off-white"],["BGE","Bege"],["CAR","Caramelo"],["MAR","Marrom"],["CIN","Cinza"],["AZM","Azul-marinho"],["VRD","Verde"],["ROS","Rosa"],["VRM","Vermelho"],["VNH","Vinho"]],
+  tamanhos:[["PP","PP"],["P","P"],["M","M"],["G","G"],["GG","GG"],["U","Único"],["36","36"],["38","38"],["40","40"],["42","42"],["44","44"],["46","46"]],
+  canais:[["loja","Loja física",0,0],["site","Site",0.0349,0.49],["mlc","ML Clássico",0.14,0],["mlp","ML Premium",0.19,0],["shopee","Shopee",0.20,0]],
+  simples:0.07, margem:0.9
+};
+const pairs = a => a.map(([cod,nome])=>({cod,nome}));
+let tabelas = {categorias:pairs(DEF.categorias),cores:pairs(DEF.cores),tamanhos:pairs(DEF.tamanhos),
+  canais:DEF.canais.map(([id,nome,pct,fixo])=>({id,nome,pct,fixo})),simples:DEF.simples,margem:DEF.margem};
+
+let db=null, sb=null, refs=[], modelos=[], insumos=[], servicos=[], editing=null, enviando=new Set();
+let tipoRef="simples", pecasForm=[], ativa=0, removerPeca=false, comum={comp:[],moItens:[]}, modoComum=false;
+let sel={cores:new Set(),tams:new Set()}, comp=[], qtds={}, moItens=[];
+let openId=null, confirmDel=null, confirmIns=null, confirmServ=null, editServId=null, moOrigem="ficha";
+
+/* ================= utilidades ================= */
+const $=id=>document.getElementById(id);
+const brl=n=>(Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const parseNum=s=>{if(s==null)return 0;s=String(s).trim().replace(/\s|R\$|%/g,"");if(!s)return 0;if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");const n=parseFloat(s);return isFinite(n)?n:0};
+const r2=n=>Math.round((Number(n)||0)*100)/100;
+const r4=n=>Math.round((Number(n)||0)*10000)/10000;
+const brlU=n=>(Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:4});
+const fmtQ=n=>n?String(Math.round(Number(n)*1000)/1000).replace(".",","):"";
+const fmtIn=n=>n?String(r2(n).toFixed(2)).replace(".",","):"";
+const fmtPct=f=>(Math.round((Number(f)||0)*10000)/100).toString().replace(".",",");
+const pad=n=>String(n).padStart(4,"0");
+const nomeDe=(lista,cod)=>(tabelas[lista].find(x=>x.cod===cod)||{}).nome||cod;
+const insDe=id=>insumos.find(i=>i.id===id);
+const servDe=id=>servicos.find(s=>s.id===id);
+const custoServPeca=(sv,pecas)=>!sv?0:sv.tipo==="fechado"?(pecas>0?sv.preco/pecas:0):sv.preco;
+const custoServLote=(sv,pecas)=>!sv?0:sv.tipo==="fechado"?sv.preco:sv.preco*pecas;
+const rotuloServ=sv=>sv.tipo==="fechado"?`${brl(sv.preco)} fechado`:`${brl(sv.preco)}/pç`;
+const pecasDe=m=>Object.values(m.quantidades||{}).reduce((t,q)=>t+(Number(q)||0),0);
+const servNome=s=>s?`${s.etapa}${s.prestador?" · "+s.prestador:""}`:"Mão de obra removida";
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,2600)}
+function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==="class")e.className=v;else if(k==="value")e.value=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v)}for(const k of kids.flat())if(k!=null&&k!==false)e.append(k.nodeType?k:document.createTextNode(k));return e}
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}} function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+async function copy(txt){try{await navigator.clipboard.writeText(txt);toast("Copiado")}catch(e){toast("Não foi possível copiar aqui; selecione o texto manualmente")}}
+
+/* ================= cálculo ================= */
+function skusFor(cat,num,cores,tams){
+  const pai=`${cat}-${pad(num)}`;
+  const oC=tabelas.cores.map(x=>x.cod), oT=tabelas.tamanhos.map(x=>x.cod);
+  const cs=[...cores].sort((a,b)=>oC.indexOf(a)-oC.indexOf(b)), ts=[...tams].sort((a,b)=>oT.indexOf(a)-oT.indexOf(b));
+  const vars=[];for(const c of cs)for(const t of ts)vars.push({sku:`${pai}-${c}-${t}`,cor:c,tam:t});
+  return {pai,vars};
+}
+function calc(composicao,mo,margem,pecas=0){
+  const custoIns=r2((composicao||[]).reduce((s,c)=>s+(Number(c.qtd)||0)*((insDe(c.insumoId)||{}).preco||0),0));
+  const custoMO=r2(Array.isArray(mo)?mo.reduce((s,x)=>s+custoServPeca(servDe(x.servicoId),pecas),0):0);
+  const custo=r2(custoIns+custoMO);
+  return {custoIns,custoMO,custo,...precosDe(custo,margem)};
+}
+function precosDe(custo,margem){
+  const m=Number(margem)||0,vmin=r2(custo*(1+m)),lucro=r2(custo*m);
+  const precos=tabelas.canais.map(c=>{const d=1-(Number(tabelas.simples)||0)-(Number(c.pct)||0);return {id:c.id,nome:c.nome,preco:d>0&&custo>0?r2((vmin+(Number(c.fixo)||0))/d):null}});
+  return {custo,vmin,lucro,precos};
+}
+const nextNumber=()=>refs.reduce((m,x)=>Math.max(m,x.numero||0),0)+1;
+
+/* ================= abas ================= */
+function show(view){document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===view));["novo","modelos","insumos","mo","config"].forEach(v=>$("view-"+v).hidden=v!==view);store("parllo-tab",view)}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+const savedTab=load("parllo-tab");if(savedTab&&$("view-"+savedTab))show(savedTab);
+
+/* ================= ficha (referência + peças) ================= */
+const CAT_KIT="CNJ";
+const novaPeca=cat=>({id:null,categoria:cat,nome:"",sel:{cores:new Set(),tams:new Set()},comp:[],qtds:{},moItens:[],salva:false});
+const pecasCount=p=>{let s=0;for(const c of p.sel.cores)for(const t of p.sel.tams)s+=p.qtds[c+"|"+t]||0;return s};
+const moDe=p=>p.moItens.filter(x=>servDe(x.servicoId)).map(x=>({servicoId:x.servicoId,qtd:1}));
+const compDe=p=>p.comp.filter(c=>insDe(c.insumoId)&&Number(c.qtd)>0).map(c=>({insumoId:c.insumoId,qtd:Number(c.qtd)}));
+const custoProprioForm=p=>calc(compDe(p),moDe(p),0,pecasCount(p)).custo;
+const kitsForm=()=>pecasForm.length?Math.min(...pecasForm.map(pecasCount)):0;
+const custoComumForm=()=>tipoRef==="conjunto"?calc(compDe(comum),moDe(comum),0,kitsForm()).custo:0;
+const parteComumForm=()=>tipoRef==="conjunto"&&pecasForm.length?r2(custoComumForm()/pecasForm.length):0;
+const custoPecaForm=p=>r2(custoProprioForm(p)+parteComumForm());
+const numAtual=()=>editing?editing.numero:nextNumber();
+const refLabel=(tipo,cat,num)=>tipo==="conjunto"?`Conjunto ${pad(num)}`:`${nomeDe("categorias",cat)} ${pad(num)}`;
+function combosComuns(lista){ // lista de {cores:[],tamanhos:[]} -> [[c,t]]
+  if(!lista.length)return [];
+  const cs=ordenados("cores",new Set(lista[0].cores)),ts=ordenados("tamanhos",new Set(lista[0].tamanhos));
+  return cs.flatMap(c=>ts.map(t=>[c,t])).filter(([c,t])=>lista.every(p=>p.cores.includes(c)&&p.tamanhos.includes(t)));
+}
+
+function ativar(i){
+  removerPeca=false;
+  modoComum=i===-1&&tipoRef==="conjunto";
+  $("peca-panel").hidden=modoComum;$("grade-panel").hidden=modoComum;$("comum-info").hidden=!modoComum;
+  $("comp-tit").textContent=modoComum?"Insumos comuns (por conjunto)":"Composição (insumos por peça)";
+  $("comp-hint").textContent=modoComum?"Consumo de um conjunto inteiro. Ex.: 1 embalagem, 1 tag. O total é dividido entre as peças.":"Em Consumo, informe quanto vai em uma peça, na unidade do insumo. Ex.: 1,35 m de tecido, 1 un de zíper.";
+  $("mo-tit").textContent=modoComum?"Mão de obra comum (por conjunto)":"Mão de obra";
+  $("mo-hint").textContent=modoComum?"Etapas cobradas pelo conjunto inteiro. O valor por peça é por conjunto montado; o valor fechado é dividido pelo número de conjuntos.":"Escolha as etapas e quem faz. A quantidade é o total de peças do lote, preenchido na grade de quantidades.";
+  $("t-mo-lbl").textContent=modoComum?"Mão de obra por conjunto":"Mão de obra por peça";$("t-mo-un").textContent=modoComum?"conjuntos":"peças";
+  $("t-ins-lbl").textContent=modoComum?"Insumos por conjunto":"Total de insumos";
+  $("p-pecas-lbl").textContent=modoComum?"Conjuntos no lote":"Peças no lote";$("p-lucro-lbl").textContent=modoComum?"Margem sobre o comum":"Lucro por peça";$("mo-col-pc").textContent=modoComum?"Conjuntos":"Peças";$("p-var-box").hidden=modoComum;
+  if(modoComum){comp=comum.comp;moItens=comum.moItens;sel={cores:new Set(),tams:new Set()};qtds={};$("comum-n").textContent=pecasForm.length;buildSelects();renderTabs();renderComp();renderMO();preview();return}
+  ativa=Math.max(0,Math.min(i,pecasForm.length-1));const p=pecasForm[ativa];
+  sel=p.sel;comp=p.comp;qtds=p.qtds;moItens=p.moItens;
+  $("f-pnome").value=p.nome;
+  buildSelects();renderTabs();renderComp();renderMO();preview();
+}
+function setTipo(t){
+  if(t==="simples"&&pecasForm.length>1){toast("Remova as peças extras antes de mudar para peça avulsa");return}
+  tipoRef=t;
+  document.querySelectorAll("#f-tipo button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tipo===t)));
+  if(t!=="conjunto"&&modoComum){modoComum=false;ativar(0)}
+  $("pecas-panel").hidden=t!=="conjunto";$("f-pnome-box").hidden=t!=="conjunto";$("f-nome-box").hidden=t==="conjunto";
+  renderTabs();preview();
+}
+document.querySelectorAll("#f-tipo button").forEach(b=>b.addEventListener("click",()=>{
+  if(editing&&b.dataset.tipo!==editing.tipo){toast("O tipo de uma referência salva não pode ser trocado");return}
+  setTipo(b.dataset.tipo);
+}));
+function renderTabs(){
+  const box=$("p-tabs");box.innerHTML="";
+  pecasForm.forEach((p,i)=>box.append(el("button",{type:"button","aria-pressed":String(!modoComum&&i===ativa),onclick:()=>ativar(i)},
+    p.nome||nomeDe("categorias",p.categoria),el("small",{},`${p.categoria}-${pad(numAtual())}`))));
+  const cc=custoComumForm();
+  box.append(el("button",{type:"button","aria-pressed":String(modoComum),onclick:()=>ativar(-1)},"Custos comuns",el("small",{},cc?`${brl(cc)} ÷ ${pecasForm.length}`:"divididos entre as peças")));
+  box.append(el("button",{type:"button",class:"add-p",onclick:()=>{
+    const livre=tabelas.categorias.map(c=>c.cod).find(c=>c!==CAT_KIT&&!pecasForm.some(p=>p.categoria===c))||tabelas.categorias[0].cod;
+    pecasForm.push(novaPeca(livre));ativar(pecasForm.length-1);
+  }},"+ Adicionar peça"));
+  $("peca-titulo").textContent=tipoRef==="conjunto"?`Peça ${ativa+1} de ${pecasForm.length}`:"Peça";
+  if(modoComum){$("peca-rem-box").innerHTML="";return}
+  const rb=$("peca-rem-box");rb.innerHTML="";
+  if(tipoRef==="conjunto"&&pecasForm.length>1){
+    rb.append(removerPeca
+      ?el("span",{class:"confirm"},"Remover esta peça?",el("button",{type:"button",class:"btn danger sm",onclick:()=>{pecasForm.splice(ativa,1);ativar(ativa-1)}},"Sim"),el("button",{type:"button",class:"btn ghost sm",onclick:()=>{removerPeca=false;renderTabs()}},"Não"))
+      :el("button",{type:"button",class:"link",onclick:()=>{removerPeca=true;renderTabs()}},"Remover esta peça"));
+  }
+}
+function buildSelects(){
+  const cat=$("f-cat");cat.innerHTML="";
+  tabelas.categorias.filter(c=>c.cod!==CAT_KIT).forEach(c=>cat.append(el("option",{value:c.cod},`${c.cod} · ${c.nome}`)));
+  const p=pecasForm[ativa];if(p)cat.value=p.categoria;cat.disabled=!!p?.salva;
+  const qc=$("q-cat"),qv=qc.value;qc.innerHTML="";qc.append(el("option",{value:""},"Todas as categorias"));
+  tabelas.categorias.forEach(c=>qc.append(el("option",{value:c.cod},c.nome)));qc.value=qv;
+  const ex=$("ex-canal"),ev=ex.value||load("parllo-excanal")||"site";ex.innerHTML="";
+  ex.append(el("option",{value:"vmin"},"Venda mínima"));tabelas.canais.forEach(c=>ex.append(el("option",{value:c.id},c.nome)));
+  ex.value=[...ex.options].some(o=>o.value===ev)?ev:"vmin";
+  chips("f-cores","cores",sel.cores);chips("f-tams","tamanhos",sel.tams);renderGrade(true);
+}
+$("f-cat").addEventListener("change",e=>{
+  const v=e.target.value;
+  if(pecasForm.some((p,i)=>i!==ativa&&p.categoria===v)){toast("Já existe uma peça dessa categoria neste conjunto");e.target.value=pecasForm[ativa].categoria;return}
+  pecasForm[ativa].categoria=v;renderTabs();preview();
+});
+$("f-pnome").addEventListener("input",e=>{pecasForm[ativa].nome=e.target.value;renderTabs()});
+
+/* grade de quantidade de peças (cor x tamanho) */
+const ordenados=(lista,set)=>{const o=tabelas[lista].map(x=>x.cod);return [...set].sort((a,b)=>o.indexOf(a)-o.indexOf(b))};
+function totalPecas(){if(modoComum)return kitsForm();let s=0;for(const c of sel.cores)for(const t of sel.tams)s+=qtds[c+"|"+t]||0;return s}
+function renderGrade(semPreview){
+  const box=$("f-grade");box.innerHTML="";
+  const cs=ordenados("cores",sel.cores),ts=ordenados("tamanhos",sel.tams);
+  if(!cs.length||!ts.length){box.append(el("p",{class:"empty"},"Selecione as cores e os tamanhos acima para preencher as quantidades."));if(!semPreview)preview();return}
+  const tb=el("tbody");
+  cs.forEach(c=>{
+    const tr=el("tr",{},el("td",{},nomeDe("cores",c)));
+    ts.forEach(t=>{const k=c+"|"+t;tr.append(el("td",{},el("input",{inputmode:"numeric","aria-label":`Peças ${nomeDe("cores",c)} ${nomeDe("tamanhos",t)}`,value:qtds[k]||"",placeholder:"0",
+      oninput:e=>{const v=Math.max(0,Math.round(parseNum(e.target.value)));if(v)qtds[k]=v;else delete qtds[k];atualizarTotais()}})))});
+    tr.append(el("td",{class:"tot","data-row":c}));tb.append(tr);
+  });
+  const tf=el("tr",{},el("td",{class:"tot"},"Total"));ts.forEach(t=>tf.append(el("td",{class:"tot","data-col":t})));tf.append(el("td",{class:"tot","data-all":"1"}));tb.append(tf);
+  box.append(el("div",{class:"gradewrap"},el("table",{class:"grade"},el("thead",{},el("tr",{},el("th",{},"Cor"),ts.map(t=>el("th",{},nomeDe("tamanhos",t))),el("th",{},"Total"))),tb)));
+  atualizarTotais(semPreview);
+}
+function atualizarTotais(semPreview){
+  const box=$("f-grade");
+  box.querySelectorAll("[data-row]").forEach(td=>{let s=0;sel.tams.forEach(t=>s+=qtds[td.dataset.row+"|"+t]||0);td.textContent=s});
+  box.querySelectorAll("[data-col]").forEach(td=>{let s=0;sel.cores.forEach(c=>s+=qtds[c+"|"+td.dataset.col]||0);td.textContent=s});
+  const all=box.querySelector("[data-all]");if(all)all.textContent=totalPecas();
+  if(!semPreview)preview();
+}
+/* atalho: nova cor / novo tamanho direto na ficha */
+document.querySelectorAll("[data-qa]").forEach(b=>b.addEventListener("click",()=>{const box=$("qa-"+b.dataset.qa);box.hidden=!box.hidden;if(!box.hidden)$("qa-"+b.dataset.qa+"-cod").focus()}));
+document.querySelectorAll("[data-qa-save]").forEach(b=>b.addEventListener("click",async()=>{
+  const lista=b.dataset.qaSave,cod=$("qa-"+lista+"-cod").value.trim().toUpperCase(),nome=$("qa-"+lista+"-nome").value.trim();
+  if(!/^[A-Z0-9]+$/.test(cod)||(lista==="cores"&&cod.length!==3)){toast(lista==="cores"?"Use exatamente 3 letras ou números, sem acento":"Use letras ou números, sem acento");return}
+  if(tabelas[lista].some(x=>x.cod===cod)){toast(`O código ${cod} já existe`);return}
+  (lista==="cores"?sel.cores:sel.tams).add(cod);
+  await saveTabelas({[lista]:[...tabelas[lista],{cod,nome:nome||cod}]});
+  $("qa-"+lista+"-cod").value="";$("qa-"+lista+"-nome").value="";$("qa-"+lista).hidden=true;
+}));
+function chips(boxId,lista,set){const box=$(boxId);box.innerHTML="";tabelas[lista].forEach(x=>box.append(el("button",{type:"button",class:"chip","aria-pressed":set.has(x.cod)?"true":"false",onclick:e=>{set.has(x.cod)?set.delete(x.cod):set.add(x.cod);e.currentTarget.setAttribute("aria-pressed",String(set.has(x.cod)));renderGrade()}},x.nome,el("code",{},x.cod))))}
+const readMO=()=>moItens.filter(x=>servDe(x.servicoId)).map(x=>({servicoId:x.servicoId,qtd:1}));
+const readMargem=()=>parseNum($("f-margem").value)/100;
+
+function renderComp(){
+  const box=$("comp");box.innerHTML="";
+  if(!insumos.length){box.append(el("p",{class:"empty"},"Nenhum insumo cadastrado ainda. Clique em Cadastrar insumo novo."));return}
+  if(!comp.length){box.append(el("p",{class:"empty"},"Nenhum insumo na composição ainda."));}
+  const sorted=[...insumos].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+  comp.forEach((c,i)=>{
+    const s=el("select",{"aria-label":"Insumo",onchange:e=>{c.insumoId=e.target.value;renderComp();preview()}});
+    if(!insDe(c.insumoId))s.append(el("option",{value:""},"Escolha…"));
+    sorted.forEach(x=>s.append(el("option",{value:x.id},`${x.nome}${x.cor?" · "+x.cor:""} (${brlU(x.preco)}/${x.un||"un"})`)));
+    s.value=insDe(c.insumoId)?c.insumoId:"";
+    const sub=el("span",{class:"sub"},brl((Number(c.qtd)||0)*((insDe(c.insumoId)||{}).preco||0)));
+    const q=el("div",{class:"qty"},el("input",{"aria-label":"Consumo por peça",inputmode:"decimal",value:fmtQ(c.qtd),placeholder:"0",oninput:e=>{c.qtd=parseNum(e.target.value);sub.textContent=brl((Number(c.qtd)||0)*((insDe(c.insumoId)||{}).preco||0));preview()}}),el("span",{},(insDe(c.insumoId)||{}).un||""));
+    box.append(el("div",{class:"comp-row"},s,q,sub,el("button",{type:"button",class:"x","aria-label":"Remover insumo",onclick:()=>{comp.splice(i,1);renderComp();preview()}},"×")));
+  });
+}
+$("comp-add").addEventListener("click",()=>{if(!insumos.length){abrirModal();return}comp.push({insumoId:"",qtd:1});renderComp()});
+
+function preview(){
+  if(!pecasForm.length)return;
+  const num=numAtual(),p=modoComum?{categoria:CAT_KIT,nome:"Custos comuns"}:pecasForm[ativa];$("f-num").value=pad(num);
+  $("f-ref").value=refLabel(tipoRef,pecasForm[0].categoria,num);$("p-ref").textContent=$("f-ref").value;
+  const {pai,vars}=modoComum?{pai:"—",vars:[]}:skusFor(p.categoria,num,sel.cores,sel.tams);
+  const margem=readMargem(),c=calc(comp,readMO(),margem,totalPecas());
+  $("t-ins").textContent=$("p-ins").textContent=brl(c.custoIns);
+  $("t-mo").textContent=$("p-mo").textContent=brl(c.custoMO);
+  const parte=tipoRef==="conjunto"&&!modoComum?parteComumForm():0;
+  $("p-comum-row").hidden=!(tipoRef==="conjunto"&&!modoComum);$("p-comum-n").textContent=pecasForm.length;$("p-comum").textContent=brl(parte);
+  const custoTot=r2(c.custo+parte),lucroTot=r2(custoTot*readMargem());
+  $("p-cost").textContent=brl(modoComum?c.custo:custoTot);$("p-lucro").textContent=brl(modoComum?c.lucro:lucroTot);
+  const pecas=totalPecas();$("p-pecas").textContent=pecas;atualizarMO();$("p-lote").textContent=brl((modoComum?c.custo:custoTot)*pecas);
+  $("p-parent").textContent=pai;$("p-count").textContent=vars.length;
+  $("p-peca-tit").textContent=modoComum?"Custos comuns (por conjunto)":tipoRef==="conjunto"?`Peça: ${p.nome||nomeDe("categorias",p.categoria)}`:"Peça";
+  // preço: avulsa = peça; conjunto = kit (soma das peças)
+  let base=c;
+  const kb=$("p-kit-box");kb.hidden=tipoRef!=="conjunto";
+  if(tipoRef==="conjunto"){
+    const custos=pecasForm.map(pp=>({pp,custo:custoPecaForm(pp)}));
+    const total=r2(custos.reduce((t,x)=>t+x.custo,0));
+    base=precosDe(total,margem);
+    $("p-kit-sku").textContent=`${CAT_KIT}-${pad(num)}`;
+    const kp=$("p-kit-pecas");kp.innerHTML="";
+    const parteC=parteComumForm();
+    custos.forEach(({pp,custo})=>kp.append(el("div",{class:"kv"},el("span",{},`${pp.categoria}-${pad(num)} · ${pp.nome||nomeDe("categorias",pp.categoria)}`),el("span",{title:`Próprio ${brl(custoProprioForm(pp))} + comum ${brl(parteC)}`},`${brl(custoProprioForm(pp))} + ${brl(parteC)} = ${brl(custo)}`))));
+    $("p-kit-comum-v").textContent=brl(custoComumForm());
+    $("p-kit-custo").textContent=brl(total);
+    $("p-kit-combos").textContent=combosComuns(pecasForm.map(pp=>({cores:[...pp.sel.cores],tamanhos:[...pp.sel.tams]}))).length;
+  }
+  $("p-precos-tit").textContent=tipoRef==="conjunto"?"Preço do kit por canal":"Preço por canal";
+  $("f-vmin").value=brl(base.vmin);
+  const pb=$("p-prices");pb.innerHTML="";
+  pb.append(el("tr",{},el("td",{},"Venda mínima ",el("small",{},"(sem tarifas)")),el("td",{},brl(base.vmin))));
+  base.precos.forEach(x=>pb.append(el("tr",{},el("td",{},x.nome),el("td",{},x.preco==null?"—":brl(x.preco)))));
+  const l=$("p-list");l.innerHTML="";
+  if(!vars.length)l.append(el("div",{class:"empty"},modoComum?"Os custos comuns não têm SKU próprio.":"Selecione ao menos uma cor e um tamanho."));
+  vars.forEach(v=>{const q=qtds[v.cor+"|"+v.tam];l.append(el("div",{},el("code",{class:"sku"},v.sku),el("span",{},`${nomeDe("cores",v.cor)} · ${v.tam}${q?` · ${q} pç`:""}`)))});
+  if(tipoRef==="conjunto")renderTabs();
+}
+$("f-margem").addEventListener("input",preview);
+$("p-copy").addEventListener("click",()=>{const p=pecasForm[ativa],{pai,vars}=skusFor(p.categoria,numAtual(),sel.cores,sel.tams);copy([pai,...vars.map(v=>v.sku)].join("\n"))});
+
+/* foto de referência */
+let fotoArquivo=null,fotoRemover=false;const fotoCache={};
+function fotoUrl(path){if(!path)return Promise.resolve(null);if(!fotoCache[path])fotoCache[path]=sb.storage.from("parllo-fotos").createSignedUrl(path,3600).then(r=>r.data?.signedUrl||null).catch(()=>null);return fotoCache[path]}
+function mostrarFoto(src){$("f-foto-img").hidden=!src;$("f-foto-vazio").hidden=!!src;if(src)$("f-foto-img").src=src;$("f-foto-rem").hidden=!src}
+$("f-foto").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>10*1024*1024){toast("A foto passa de 10 MB. Use uma imagem menor.");e.target.value="";return}
+  fotoArquivo=f;fotoRemover=false;mostrarFoto(URL.createObjectURL(f));
+});
+$("f-foto-rem").addEventListener("click",()=>{fotoArquivo=null;fotoRemover=true;$("f-foto").value="";mostrarFoto(null)});
+
+function resetForm(){
+  editing=null;$("form").reset();fotoArquivo=null;fotoRemover=false;mostrarFoto(null);
+  pecasForm=[novaPeca(tabelas.categorias.find(c=>c.cod!==CAT_KIT)?.cod||"VES")];comum={comp:[],moItens:[]};modoComum=false;
+  $("f-margem").value=fmtPct(tabelas.margem);
+  $("form-title").textContent="Nova referência";$("f-save").textContent="Salvar referência";$("f-cancel").hidden=true;$("f-msg").textContent="";
+  setTipo("simples");ativar(0);
+}
+function editRef(r){
+  editing=r;show("novo");$("form").reset();fotoArquivo=null;fotoRemover=false;mostrarFoto(null);
+  if(r.fotoPath)fotoUrl(r.fotoPath).then(u=>{if(editing===r&&!fotoArquivo)mostrarFoto(u)});
+  $("f-nome").value=r.tipo==="conjunto"?"":(r.nome||"");$("f-col").value=r.colecao||"";$("f-ncm").value=r.ncm||"";$("f-obs").value=r.obs||"";$("f-margem").value=fmtPct(r.margem);
+  pecasForm=r.pecas.map(p=>{
+    const qt={};Object.entries(p.quantidades||{}).forEach(([sku,q])=>{const s=sku.split("-");if(s.length>=4&&q>0)qt[s[2]+"|"+s.slice(3).join("-")]=Number(q)});
+    return {id:p.id,categoria:p.categoria,nome:p.nome||"",sel:{cores:new Set(p.cores||[]),tams:new Set(p.tamanhos||[])},comp:(p.composicao||[]).map(x=>({...x})),qtds:qt,moItens:(Array.isArray(p.maoDeObra)?p.maoDeObra:[]).map(x=>({...x})),salva:true};
+  });
+  if(!pecasForm.length)pecasForm=[novaPeca(tabelas.categorias[0].cod)];
+  comum={comp:(r.composicaoComum||[]).map(x=>({...x})),moItens:(r.maoDeObraComum||[]).map(x=>({...x}))};modoComum=false;
+  $("form-title").textContent=`Editando ${r.label}`;$("f-save").textContent="Salvar alterações";$("f-cancel").hidden=false;$("f-msg").textContent="";
+  setTipo(r.tipo);ativar(0);window.scrollTo({top:0});
+}
+$("f-cancel").addEventListener("click",resetForm);
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!db){toast("Banco de dados indisponível");return}
+  const msg=$("f-msg");
+  if(tipoRef==="conjunto"){const sem=pecasForm.findIndex(p=>!p.nome.trim());if(sem>=0){ativar(sem);msg.textContent="Dê um nome a esta peça.";$("f-pnome").focus();return}}
+  const nome=tipoRef==="conjunto"?pecasForm.map(p=>p.nome.trim()).join(" + "):$("f-nome").value.trim();
+  if(!nome){msg.textContent="Dê um nome ao produto.";return}
+  const ncm=$("f-ncm").value.replace(/\D/g,"");
+  if(ncm&&ncm.length!==8){msg.textContent="O NCM deve ter 8 dígitos.";return}
+  if(tipoRef==="conjunto"&&pecasForm.length<2){msg.textContent="Um conjunto precisa de pelo menos 2 peças. Clique em + Adicionar peça.";return}
+  const cats=pecasForm.map(p=>p.categoria);if(new Set(cats).size!==cats.length){msg.textContent="Cada peça do conjunto precisa ter uma categoria diferente.";return}
+  if(modoComum)ativar(0);
+  const semGrade=pecasForm.findIndex(p=>!p.sel.cores.size||!p.sel.tams.size);
+  if(semGrade>=0){ativar(semGrade);msg.textContent="Selecione ao menos uma cor e um tamanho nesta peça.";return}
+  const numero=numAtual(),margem=readMargem();
+  $("f-save").disabled=true;msg.textContent="Salvando…";
+  try{
+    let fotoPath=editing?.fotoPath||null;
+    if(fotoArquivo){
+      const ext=(fotoArquivo.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+      const path=`${numero}/${Date.now()}.${ext}`;
+      const {error}=await sb.storage.from("parllo-fotos").upload(path,fotoArquivo,{contentType:fotoArquivo.type,upsert:false});
+      if(error)throw new Error("Não foi possível enviar a foto: "+error.message);
+      if(fotoPath)sb.storage.from("parllo-fotos").remove([fotoPath]);
+      fotoPath=path;
+    }else if(fotoRemover&&fotoPath){sb.storage.from("parllo-fotos").remove([fotoPath]);fotoPath=null}
+    const ref={numero,tipo:tipoRef,nome,colecao:$("f-col").value.trim()||null,ncm:ncm||null,margem,foto_path:fotoPath,obs:$("f-obs").value.trim()||null,
+      composicao_comum:tipoRef==="conjunto"?compDe(comum):[],mao_de_obra_comum:tipoRef==="conjunto"?moDe(comum):[],atualizado_em:new Date().toISOString()};
+    if(editing)await q(sb.from("referencias").update(ref).eq("numero",numero));
+    else await q(sb.from("referencias").insert(ref));
+    const linhas=pecasForm.map((p,i)=>{
+      const pai=`${p.categoria}-${pad(numero)}`;
+      return {id:p.id,row:{numero,ordem:i,categoria:p.categoria,nome:tipoRef==="conjunto"?p.nome.trim():nome,
+        cores:[...p.sel.cores],tamanhos:[...p.sel.tams],
+        quantidades:Object.fromEntries([...p.sel.cores].flatMap(c=>[...p.sel.tams].map(t=>[`${pai}-${c}-${t}`,p.qtds[c+"|"+t]||0])).filter(([,x])=>x>0)),
+        composicao:compDe(p),mao_de_obra:moDe(p),custo_no_cadastro:custoPecaForm(p),atualizado_em:new Date().toISOString()}};
+    });
+    if(editing){const ficam=new Set(linhas.map(l=>l.id).filter(Boolean));const sair=editing.pecas.filter(p=>!ficam.has(p.id)).map(p=>p.id);if(sair.length)await q(sb.from("pecas").delete().in("id",sair))}
+    for(const l of linhas){if(l.id)await q(sb.from("pecas").update(l.row).eq("id",l.id));else await q(sb.from("pecas").insert(l.row))}
+    toast(`${refLabel(tipoRef,pecasForm[0].categoria,numero)} ${editing?"atualizada":"salva"}`);
+    await recarregar();resetForm();
+  }catch(err){msg.textContent=err?.code==="23505"?"Esse número ou SKU já existe. Recarregue a página e salve de novo.":"Não foi possível salvar: "+(err?.message||"tente de novo")}
+  finally{$("f-save").disabled=false}
+});
+
+/* ================= referências salvas ================= */
+const kitsRef=r=>r.pecas.length?Math.min(...r.pecas.map(pecasDe)):0;
+const custoComumRef=r=>r.tipo==="conjunto"?calc(r.composicaoComum,r.maoDeObraComum,0,kitsRef(r)).custo:0;
+const parteComumRef=r=>r.tipo==="conjunto"&&r.pecas.length?r2(custoComumRef(r)/r.pecas.length):0;
+const custoPecaRef=(p,r)=>r2(calc(p.composicao,p.maoDeObra,0,pecasDe(p)).custo+parteComumRef(r));
+function custoRef(r){return r2(r.pecas.reduce((t,p)=>t+custoPecaRef(p,r),0))}
+function precoCanal(base,canal){return canal==="vmin"?base.vmin:(base.precos.find(x=>x.id===canal)||{}).preco}
+function kitCombos(r){return combosComuns(r.pecas.map(p=>({cores:p.cores||[],tamanhos:p.tamanhos||[]})))}
+function olistPillDe(st){return st==="ok"?el("span",{class:"pill ok"},"Na Olist"):st==="parcial"?el("span",{class:"pill err"},"Olist: com avisos"):st==="erro"?el("span",{class:"pill err"},"Olist: erro"):null}
+function statusRef(r){const sts=[...r.pecas.map(p=>p.olistStatus),...(r.tipo==="conjunto"?[r.olistStatus]:[])];if(sts.includes("erro"))return "erro";if(sts.includes("parcial"))return "parcial";if(sts.length&&sts.every(s=>s==="ok"))return "ok";return null}
+function renderList(){
+  const th=$("thead");th.innerHTML="";
+  const canalSel=$("ex-canal").value,canalNome=canalSel==="vmin"?"Venda mín.":(tabelas.canais.find(c=>c.id===canalSel)||{}).nome||"Preço";
+  th.append(el("tr",{},el("th",{},""),el("th",{},"Referência"),el("th",{},"Peças (SKU pai)"),el("th",{},"Lote"),el("th",{class:"num"},"Custo"),el("th",{class:"num"},"Venda mín."),el("th",{class:"num"},canalNome),el("th",{})));
+  const qv=$("q").value.trim().toLowerCase(),qc=$("q-cat").value,tb=$("tbody");tb.innerHTML="";
+  const rows=refs.filter(r=>(!qc||r.pecas.some(p=>p.categoria===qc)||(qc===CAT_KIT&&r.tipo==="conjunto"))&&(!qv||[r.label,r.nome,r.colecao,...r.pecas.map(p=>p.skuPai+" "+p.nome)].join(" ").toLowerCase().includes(qv)));
+  const msg=t=>tb.append(el("tr",{},el("td",{colspan:8,class:"empty"},t)));
+  if(!refs.length)msg("Nenhuma referência salva ainda. Monte a primeira na aba Ficha.");
+  else if(!rows.length)msg("Nada encontrado para essa busca.");
+  rows.forEach(r=>{
+    const custo=custoRef(r),base=precosDe(custo,r.margem),pc=precoCanal(base,canalSel),isOpen=openId===r.numero;
+    const pecasLote=r.pecas.reduce((t,p)=>t+pecasDe(p),0);
+    const thumb=el("div",{class:"thumb vazia"},"—");
+    if(r.fotoPath)fotoUrl(r.fotoPath).then(u=>{if(u)thumb.replaceWith(el("img",{class:"thumb",src:u,alt:"Foto "+r.label}))});
+    const actions=confirmDel===r.numero
+      ?el("span",{class:"confirm"},"Excluir?",el("button",{class:"btn danger sm",onclick:e=>{e.stopPropagation();delRef(r)}},"Sim"),el("button",{class:"btn ghost sm",onclick:e=>{e.stopPropagation();confirmDel=null;renderList()}},"Não"))
+      :el("span",{class:"row",style:"justify-content:flex-end"},
+        el("button",{class:"btn sm",disabled:enviando.has(r.numero),onclick:e=>{e.stopPropagation();enviarOlist(r)}},enviando.has(r.numero)?"Enviando…":(statusRef(r)?"Reenviar à Olist":"Enviar à Olist")),
+        el("button",{class:"btn ghost sm",onclick:e=>{e.stopPropagation();editRef(r)}},"Editar"),el("button",{class:"btn danger sm",onclick:e=>{e.stopPropagation();confirmDel=r.numero;renderList()}},"Excluir"));
+    tb.append(el("tr",{class:isOpen?"open":"",style:"cursor:pointer",onclick:()=>{openId=isOpen?null:r.numero;renderList()}},
+      el("td",{},thumb),
+      el("td",{},el("b",{},r.label),el("div",{},r.nome),el("div",{class:"row",style:"margin-top:4px"},r.tipo==="conjunto"?el("span",{class:"pill"},"Kit "+CAT_KIT+"-"+pad(r.numero)):null,r.colecao?el("span",{class:"pill"},r.colecao):null,olistPillDe(statusRef(r)))),
+      el("td",{},el("div",{class:"sku-chips"},r.pecas.map(p=>el("code",{},p.skuPai)))),
+      el("td",{},pecasLote?`${pecasLote} peças`:"—"),
+      el("td",{class:"num"},brl(custo)),el("td",{class:"num"},brl(base.vmin)),el("td",{class:"num"},pc==null?"—":brl(pc)),
+      el("td",{class:"num"},actions)));
+    if(isOpen){
+      const blocos=r.pecas.map(p=>{
+        const pp=pecasDe(p),c=calc(p.composicao,p.maoDeObra,r.margem,pp),{vars}=skusFor(p.categoria,r.numero,p.cores||[],p.tamanhos||[]);
+        const compLines=(p.composicao||[]).map(x=>{const i=insDe(x.insumoId);return el("div",{class:"kv"},el("span",{},`${i?i.nome:"Insumo removido"} × ${fmtQ(x.qtd)} ${i?.un||""}`),el("span",{},brl((i?.preco||0)*x.qtd)))});
+        const moLines=(p.maoDeObra||[]).map(x=>{const sv=servDe(x.servicoId);return el("div",{class:"kv"},el("span",{},servNome(sv)+(sv?.tipo==="fechado"?` (${brl(sv.preco)} ÷ ${pp} pç)`:"")),el("span",{},`${brl(custoServPeca(sv,pp))}/pç`))});
+        return el("div",{class:"peca-det"},el("h4",{},`${p.skuPai} · ${p.nome}`),
+          el("div",{class:"grid"},
+            el("div",{},el("div",{class:"row"},el("b",{},`SKUs (${vars.length})`),el("button",{class:"btn ghost sm",onclick:()=>copy([p.skuPai,...vars.map(v=>v.sku)].join("\n"))},"Copiar")),
+              el("div",{class:"list"},vars.map(v=>{const q2=Number((p.quantidades||{})[v.sku])||0;return el("div",{},el("code",{class:"sku"},v.sku),el("span",{},`${nomeDe("cores",v.cor)} · ${v.tam}${q2?` · ${q2} pç`:""}`))}))),
+            el("div",{},el("b",{},"Insumos"),compLines.length?compLines:el("p",{class:"empty"},"Sem insumos."),
+              el("b",{style:"display:block;margin-top:10px"},"Mão de obra"),moLines.length?moLines:el("p",{class:"empty"},"Sem mão de obra."),
+              r.tipo==="conjunto"?[el("div",{class:"kv"},el("span",{},"Custo próprio da peça"),el("span",{},brl(c.custo))),el("div",{class:"kv"},el("span",{},`Parte dos custos comuns (${brl(custoComumRef(r))} ÷ ${r.pecas.length})`),el("span",{},brl(parteComumRef(r))))]:null,
+              el("div",{class:"kv strong"},el("span",{},"Custo da peça"),el("span",{},brl(custoPecaRef(p,r)))),
+              r.tipo==="simples"?c.precos.map(x=>el("div",{class:"kv"},el("span",{},x.nome),el("span",{},x.preco==null?"—":brl(x.preco)))):null,
+              p.olistErro?el("p",{class:"olist-err"},p.olistErro):null)));
+      });
+      let kit=null;
+      if(r.tipo==="conjunto"){
+        const combos=kitCombos(r),sk=`${CAT_KIT}-${pad(r.numero)}`;
+        kit=el("div",{class:"peca-det"},el("h4",{},`Kit ${sk} · ${r.nome}`),
+          el("div",{class:"grid"},
+            el("div",{},el("b",{},`Variações do kit (${combos.length})`),
+              el("div",{class:"list"},combos.length?combos.map(([c,t])=>el("div",{},el("code",{class:"sku"},`${sk}-${c}-${t}`),el("span",{},r.pecas.map(p=>`${p.categoria}-${pad(r.numero)}-${c}-${t}`).join(" + ")))):el("div",{class:"empty"},"As peças não têm cor e tamanho em comum."))),
+            el("div",{},
+              r.pecas.map(p=>el("div",{class:"kv"},el("span",{},`${p.skuPai} · ${p.nome}`),el("span",{},brl(custoPecaRef(p,r))))),
+              (()=>{const ic=(r.composicaoComum||[]).map(x=>{const i=insDe(x.insumoId);return `${i?i.nome:"?"} × ${fmtQ(x.qtd)}`}),mc=(r.maoDeObraComum||[]).map(x=>servNome(servDe(x.servicoId)));
+                return el("div",{class:"kv"},el("span",{},"Custos comuns"+(ic.length||mc.length?`: ${[...ic,...mc].join(", ")}`:"")),el("span",{},`${brl(custoComumRef(r))} ÷ ${r.pecas.length} = ${brl(parteComumRef(r))}/pç`))})(),
+              el("div",{class:"kv strong"},el("span",{},"Custo do conjunto"),el("span",{},brl(custo))),
+              el("div",{class:"kv"},el("span",{},`Margem ${fmtPct(r.margem)}%`),el("span",{},brl(base.lucro))),
+              base.precos.map(x=>el("div",{class:"kv"},el("span",{},x.nome),el("span",{},x.preco==null?"—":brl(x.preco)))),
+              r.olistErro?el("p",{class:"olist-err"},r.olistErro):null)));
+      }
+      tb.append(el("tr",{class:"detail"},el("td",{colspan:8},kit,blocos,
+        el("p",{class:"note"},r.ncm?"NCM "+r.ncm:"Sem NCM: preencha antes de emitir nota pela Olist."),r.obs?el("p",{class:"note"},r.obs):null)));
+    }
+  });
+  $("sumline").innerHTML="";
+  if(refs.length)$("sumline").append(el("span",{},`${rows.length} referências · ${rows.reduce((t,r)=>t+r.pecas.length,0)} peças`),el("span",{},`Próximo número: ${pad(nextNumber())}`));
+}
+$("q").addEventListener("input",renderList);$("q-cat").addEventListener("change",renderList);
+$("ex-canal").addEventListener("change",e=>{store("parllo-excanal",e.target.value);renderList()});
+$("ex-catpre").value=load("parllo-catpre")||"";$("ex-catpre").addEventListener("input",e=>store("parllo-catpre",e.target.value));
+async function delRef(r){
+  try{await q(sb.from("referencias").delete().eq("numero",r.numero));if(r.fotoPath)sb.storage.from("parllo-fotos").remove([r.fotoPath]);
+    confirmDel=null;openId=null;toast(`${r.label} excluída`);await recarregar()}catch(e){toast("Não foi possível excluir")}
+}
+
+/* ================= envio à Olist ================= */
+async function erroDaFuncao(error){try{const j=await error.context.json();return j.erro||error.message}catch(e){return error?.message||"erro desconhecido"}}
+async function enviarOlist(r){
+  if(enviando.has(r.numero))return;
+  const canal=$("ex-canal").value;
+  const pecas=r.pecas.map(p=>{const custo=custoPecaRef(p,r),b=precosDe(custo,r.margem);return {id:p.id,preco:precoCanal(b,canal),precoCusto:custo}});
+  if(pecas.some(p=>!(p.preco>0))){toast("Todas as peças precisam de custo para calcular o preço");return}
+  let kit=null;if(r.tipo==="conjunto"){const custo=custoRef(r),b=precosDe(custo,r.margem);kit={preco:precoCanal(b,canal),precoCusto:custo}}
+  enviando.add(r.numero);renderList();toast(`Enviando ${r.label} à Olist…`);
+  try{
+    const {data,error}=await sb.functions.invoke("olist-enviar",{body:{numero:r.numero,pecas,kit}});
+    if(error)throw new Error(await erroDaFuncao(error));
+    toast(data.avisos?.length?`${r.label} enviada com ${data.avisos.length} aviso(s). Veja nos detalhes.`:`${r.label} enviada à Olist`);
+    if(data.avisos?.length)openId=r.numero;
+  }catch(e){toast("Olist: "+e.message);openId=r.numero}
+  finally{enviando.delete(r.numero);await recarregar()}
+}
+async function olistStatus(){
+  const b=$("olist-btn");
+  try{
+    const {data,error}=await sb.functions.invoke("olist-oauth?action=status");
+    if(error)throw new Error(await erroDaFuncao(error));
+    b.hidden=false;b.dataset.msg=data.conectado?`Olist conectada${data.conta?": "+data.conta:""}`:(data.erro||"Olist não conectada");
+    b.textContent=data.conectado?"Olist conectada":"Olist não conectada";b.classList.toggle("ghost",!!data.conectado);b.title=b.dataset.msg;
+  }catch(e){b.hidden=false;b.textContent="Olist não conectada";b.dataset.msg=e.message}
+}
+$("olist-btn").addEventListener("click",async()=>{await olistStatus();toast($("olist-btn").dataset.msg||"")});
+window.addEventListener("focus",()=>{if(db){olistStatus();recarregar()}});
+
+/* ================= exportação ================= */
+const csvCell=v=>{v=String(v??"");return /[;"\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+const dec=n=>n==null?"":r2(n).toFixed(2).replace(".",",");
+async function saveCsv(name,rows){
+  const csv="﻿"+rows.map(r=>r.map(csvCell).join(";")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  const a=el("a",{href:url,download:name});document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);toast("Arquivo exportado");
+}
+const hoje=()=>new Date().toISOString().slice(0,10);
+$("ex-olist").addEventListener("click",()=>{
+  if(!refs.length){toast("Nenhuma referência para exportar");return}
+  const canal=$("ex-canal").value,pre=$("ex-catpre").value.trim();
+  const head=["ID","Código (SKU)","Descrição","Unidade","NCM","Origem","Preço","Preço de custo","Situação","Sob encomenda","Categoria","Tipo do produto","Código do pai","Variações"];
+  const rows=[head];
+  [...refs].sort((a,b)=>a.numero-b.numero).forEach(r=>r.pecas.forEach(p=>{
+    const c=precosDe(custoPecaRef(p,r),r.margem),preco=precoCanal(c,canal),nomeP=`${p.nome} ${pad(r.numero)}`;
+    const cat=[pre,nomeDe("categorias",p.categoria)].filter(Boolean).join(" > ");
+    const {pai,vars}=skusFor(p.categoria,r.numero,p.cores||[],p.tamanhos||[]);
+    rows.push(["",pai,nomeP,"UN",r.ncm||"","0",dec(preco),dec(c.custo),"Ativo","Não",cat,"V","",""]);
+    vars.forEach(v=>rows.push(["",v.sku,`${nomeP} ${nomeDe("cores",v.cor)} ${nomeDe("tamanhos",v.tam)}`,"UN",r.ncm||"","0",dec(preco),dec(c.custo),"Ativo","Não",cat,"S",pai,`Cor:${nomeDe("cores",v.cor)}||Tamanho:${nomeDe("tamanhos",v.tam)}`]));
+  }));
+  saveCsv(`parllo-olist-${hoje()}.csv`,rows);
+});
+$("ex-full").addEventListener("click",()=>{
+  if(!refs.length){toast("Nenhuma referência para exportar");return}
+  const head=["referencia","tipo","sku","sku_pai","produto","categoria","cor","tamanho","pecas","colecao","ncm","custo_insumos","custo_mao_de_obra","parte_custos_comuns","custo_producao","margem_%","venda_minima",...tabelas.canais.map(c=>"preco_"+c.nome)];
+  const rows=[head];
+  [...refs].sort((a,b)=>a.numero-b.numero).forEach(r=>{
+    r.pecas.forEach(p=>{const c=calc(p.composicao,p.maoDeObra,r.margem,pecasDe(p)),pc_=parteComumRef(r),b=precosDe(custoPecaRef(p,r),r.margem);
+      skusFor(p.categoria,r.numero,p.cores||[],p.tamanhos||[]).vars.forEach(v=>rows.push([r.label,"peça",v.sku,p.skuPai,p.nome,nomeDe("categorias",p.categoria),nomeDe("cores",v.cor),v.tam,Number((p.quantidades||{})[v.sku])||0,r.colecao,r.ncm,dec(c.custoIns),dec(c.custoMO),dec(pc_),dec(b.custo),fmtPct(r.margem),dec(b.vmin),...b.precos.map(x=>dec(x.preco))]))});
+    if(r.tipo==="conjunto"){const custo=custoRef(r),b=precosDe(custo,r.margem),sk=`${CAT_KIT}-${pad(r.numero)}`;
+      kitCombos(r).forEach(([c,t])=>rows.push([r.label,"kit",`${sk}-${c}-${t}`,sk,r.nome,"Conjunto",nomeDe("cores",c),t,"",r.colecao,r.ncm,"","",dec(custoComumRef(r)),dec(custo),fmtPct(r.margem),dec(b.vmin),...b.precos.map(x=>dec(x.preco))]))}
+  });
+  saveCsv(`parllo-custos-${hoje()}.csv`,rows);
+});
+
+/* ================= insumos ================= */
+function usoInsumo(id){return [...modelos.filter(m=>(m.composicao||[]).some(c=>c.insumoId===id)),...refs.filter(r=>(r.composicaoComum||[]).some(c=>c.insumoId===id)).map(r=>({skuPai:`${CAT_KIT}-${pad(r.numero)} (comum)`}))]}
+function renderInsumos(){
+  const q=$("iq").value.trim().toLowerCase(),tb=$("ibody");tb.innerHTML="";
+  const rows=[...insumos].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).filter(i=>!q||[i.nome,i.fornecedor,i.cor].join(" ").toLowerCase().includes(q));
+  if(!insumos.length)tb.append(el("tr",{},el("td",{colspan:7,class:"empty"},"Nenhum insumo cadastrado. Adicione o primeiro acima.")));
+  else if(!rows.length)tb.append(el("tr",{},el("td",{colspan:7,class:"empty"},"Nada encontrado.")));
+  rows.forEach(i=>{
+    const uso=usoInsumo(i.id),un=i.un||"un";
+    const qtdC=Number(i.qtdCompra)||1,totC=i.valorTotal!=null?Number(i.valorTotal):r2((Number(i.preco)||0)*qtdC);
+    const unitCell=el("td",{class:"num"},el("b",{},brlU(i.preco)),el("span",{class:"note"},` /${un}`));
+    async function salvar(novaQtd,novoTotal){
+      if(!(novaQtd>0)){toast("A quantidade precisa ser maior que zero");renderInsumos();return}
+      const preco=r4(novoTotal/novaQtd);
+      try{await DB.atualizarInsumo(i.id,{qtdCompra:novaQtd,valorTotal:r2(novoTotal),preco});toast(`${i.nome}: ${brlU(preco)} por ${un}`);await recarregar()}catch(err){toast("Não foi possível salvar");renderInsumos()}
+    }
+    const qIn=el("div",{class:"qty ins-in",style:"display:inline-block"},el("input",{"aria-label":"Quantidade comprada de "+i.nome,inputmode:"decimal",value:fmtQ(qtdC),onchange:e=>{const v=parseNum(e.target.value);if(v!==qtdC)salvar(v,totC)}}),el("span",{},un));
+    const tIn=el("div",{class:"money ins-in",style:"display:inline-block"},el("span",{},"R$"),el("input",{"aria-label":"Valor pago por "+i.nome,inputmode:"decimal",value:fmtIn(totC),onchange:e=>{const v=r2(parseNum(e.target.value));if(v!==totC)salvar(qtdC,v)}}));
+    const act=uso.length?el("span",{class:"pill"},"em uso"):confirmIns===i.id
+      ?el("span",{class:"confirm"},"Excluir?",el("button",{class:"btn danger sm",onclick:()=>delIns(i)},"Sim"),el("button",{class:"btn ghost sm",onclick:()=>{confirmIns=null;renderInsumos()}},"Não"))
+      :el("button",{class:"btn danger sm",onclick:()=>{confirmIns=i.id;renderInsumos()}},"Excluir");
+    tb.append(el("tr",{},el("td",{},i.nome,i.cor?el("div",{},el("span",{class:"pill"},i.cor)):null),el("td",{},i.fornecedor||"—"),
+      el("td",{class:"num"},qIn),el("td",{class:"num"},tIn),unitCell,
+      el("td",{},uso.length?uso.map(m=>m.skuPai).join(", "):"—"),el("td",{class:"num"},act)));
+  });
+}
+$("iq").addEventListener("input",renderInsumos);
+function unitPreview(p){
+  const un=$(p+"-un").value,q=parseNum($(p+"-qtd").value)||1,t=parseNum($(p+"-total").value);
+  $(p+"-qtd-un").textContent=un;$(p+"-unit").value=t?`${brlU(t/q)} por ${un}`:"";
+}
+["i","m"].forEach(p=>{
+  [p+"-qtd",p+"-total"].forEach(k=>$(k).addEventListener("input",()=>unitPreview(p)));
+  $(p+"-un").addEventListener("change",()=>unitPreview(p));
+  $(p+"-total").addEventListener("blur",e=>{e.target.value=fmtIn(parseNum(e.target.value))});
+});
+async function criarInsumo(p){
+  if(!db){toast("Banco de dados indisponível");return null}
+  const nome=$(p+"-nome").value.trim();if(!nome){toast("Preencha a descrição do insumo");$(p+"-nome").focus();return null}
+  const qtdCompra=parseNum($(p+"-qtd").value)||1,valorTotal=r2(parseNum($(p+"-total").value));
+  if(!valorTotal){toast("Preencha o valor pago");$(p+"-total").focus();return null}
+  const doc={nome,un:$(p+"-un").value,qtdCompra,valorTotal,preco:r4(valorTotal/qtdCompra),fornecedor:$(p+"-forn").value.trim(),cor:$(p+"-cor").value.trim()};
+  try{const novo=await DB.criarInsumo(doc);[p+"-nome",p+"-qtd",p+"-total",p+"-forn",p+"-cor",p+"-unit"].forEach(k=>$(k).value="");toast(`${nome}: ${brlU(doc.preco)} por ${doc.un}`);await recarregar();return novo}
+  catch(e){toast("Não foi possível salvar o insumo");return null}
+}
+$("i-add").addEventListener("click",()=>criarInsumo("i"));
+
+/* popup de novo insumo na ficha */
+function abrirModal(){["m-nome","m-qtd","m-total","m-forn","m-cor","m-unit"].forEach(k=>$(k).value="");$("m-un").value="m";unitPreview("m");$("modal").hidden=false;setTimeout(()=>$("m-nome").focus(),30)}
+function fecharModal(){$("modal").hidden=true;$("go-insumos").focus()}
+$("go-insumos").addEventListener("click",abrirModal);
+$("m-close").addEventListener("click",fecharModal);$("m-cancel").addEventListener("click",fecharModal);
+$("modal").addEventListener("click",e=>{if(e.target===$("modal"))fecharModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("modal").hidden)fecharModal()});
+$("m-form").addEventListener("submit",async e=>{
+  e.preventDefault();$("m-save").disabled=true;
+  const novo=await criarInsumo("m");$("m-save").disabled=false;
+  if(!novo)return;
+  if(!insDe(novo.id))insumos.push(novo);
+  const vazio=comp.find(c=>!insDe(c.insumoId));
+  if(vazio){vazio.insumoId=novo.id;vazio.qtd=0}else comp.push({insumoId:novo.id,qtd:0});
+  $("modal").hidden=true;renderComp();preview();
+  const idx=comp.findIndex(c=>c.insumoId===novo.id);
+  const inp=$("comp").querySelectorAll(".comp-row")[idx]?.querySelector("input");
+  if(inp)inp.focus();
+});
+async function delIns(i){try{await DB.excluirInsumo(i.id);confirmIns=null;toast(`${i.nome} excluído`);await recarregar()}catch(e){toast("Não foi possível excluir")}}
+
+/* ================= códigos e taxas ================= */
+let canaisDraft=[];
+function usados(lista){const s=new Set();modelos.forEach(m=>{if(lista==="categorias")s.add(m.categoria);if(lista==="cores")(m.cores||[]).forEach(c=>s.add(c));if(lista==="tamanhos")(m.tamanhos||[]).forEach(t=>s.add(t))});return s}
+function renderCodes(){
+  [["categorias","c-cat"],["cores","c-cor"],["tamanhos","c-tam"]].forEach(([lista,box])=>{
+    const u=usados(lista),b=$(box);b.innerHTML="";
+    tabelas[lista].forEach(x=>b.append(el("div",{class:"code-row"},el("code",{},x.cod),el("span",{},x.nome),
+      u.has(x.cod)?el("span",{class:"pill"},"em uso"):el("button",{type:"button",onclick:()=>saveTabelas({[lista]:tabelas[lista].filter(y=>y.cod!==x.cod)})},"remover"))));
+  });
+}
+function renderTaxas(){
+  $("cfg-simples").value=fmtPct(tabelas.simples);$("cfg-margem").value=fmtPct(tabelas.margem);
+  canaisDraft=tabelas.canais.map(c=>({...c}));drawCanais();
+}
+function drawCanais(){
+  const box=$("cfg-canais");box.innerHTML="";
+  box.append(el("div",{class:"canal-row",style:"font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700"},el("span",{},"Canal"),el("span",{},"Tarifa %"),el("span",{},"Fixa R$"),el("span",{})));
+  canaisDraft.forEach((c,i)=>box.append(el("div",{class:"canal-row"},
+    el("input",{"aria-label":"Nome do canal",value:c.nome,oninput:e=>c.nome=e.target.value}),
+    el("div",{class:"pct"},el("input",{"aria-label":"Tarifa percentual",inputmode:"decimal",value:fmtPct(c.pct),oninput:e=>c.pct=parseNum(e.target.value)/100}),el("span",{},"%")),
+    el("div",{class:"money"},el("span",{},"R$"),el("input",{"aria-label":"Tarifa fixa",inputmode:"decimal",value:fmtIn(c.fixo),oninput:e=>c.fixo=r2(parseNum(e.target.value))})),
+    el("button",{type:"button",class:"link","aria-label":"Remover canal",onclick:()=>{canaisDraft.splice(i,1);drawCanais()}},"×"))));
+}
+$("cn-add").addEventListener("click",()=>{const n=$("cn-nome").value.trim();if(!n){toast("Dê um nome ao canal");return}canaisDraft.push({id:"c"+Date.now().toString(36),nome:n,pct:0,fixo:0});$("cn-nome").value="";drawCanais()});
+$("cfg-save").addEventListener("click",()=>{
+  const simples=parseNum($("cfg-simples").value)/100,margem=parseNum($("cfg-margem").value)/100;
+  if(canaisDraft.some(c=>!c.nome.trim())){toast("Todo canal precisa de nome");return}
+  if(canaisDraft.some(c=>simples+c.pct>=1)){toast("Imposto + tarifa não pode chegar a 100%");return}
+  saveTabelas({simples,margem,canais:canaisDraft.map(c=>({id:c.id,nome:c.nome.trim(),pct:c.pct,fixo:c.fixo}))});
+});
+document.querySelectorAll("[data-add]").forEach(btn=>btn.addEventListener("click",()=>{
+  const lista=btn.dataset.add,pre={categorias:"c-cat",cores:"c-cor",tamanhos:"c-tam"}[lista];
+  const cod=$(pre+"-cod").value.trim().toUpperCase(),nome=$(pre+"-nome").value.trim();
+  if(!/^[A-Z0-9]+$/.test(cod)||(lista!=="tamanhos"&&cod.length!==3)){toast(lista==="tamanhos"?"Use letras ou números, sem acento":"Use exatamente 3 letras ou números, sem acento");return}
+  if(!nome){toast("Preencha o nome");return}
+  if(tabelas[lista].some(x=>x.cod===cod)){toast(`O código ${cod} já existe`);return}
+  saveTabelas({[lista]:[...tabelas[lista],{cod,nome}]});$(pre+"-cod").value="";$(pre+"-nome").value="";
+}));
+async function saveTabelas(patch){
+  if(!db){toast("Banco de dados indisponível");return}
+  try{await DB.salvarConfig({...tabelas,...patch});toast("Configurações salvas");await recarregar();renderTaxas()}catch(e){toast("Não foi possível salvar")}
+}
+
+/* ================= início ================= */
+function renderAll(){if(!pecasForm.length)pecasForm=[novaPeca(tabelas.categorias.find(c=>c.cod!=="CNJ")?.cod||"VES")];buildSelects();renderTabs();renderComp();renderMO();preview();renderList();renderInsumos();renderServicos();renderCodes()}
+/* ================= mão de obra ================= */
+function renderMO(){
+  const box=$("mo-list");box.innerHTML="";
+  if(!servicos.length){box.append(el("p",{class:"empty"},"Nenhuma mão de obra cadastrada ainda. Clique em Cadastrar mão de obra nova."));return}
+  if(!moItens.length)box.append(el("p",{class:"empty"},"Nenhuma etapa na ficha ainda."));
+  const sorted=[...servicos].sort((a,b)=>servNome(a).localeCompare(servNome(b),"pt-BR"));
+  moItens.forEach((x,i)=>{
+    x.qtd=1;
+    const s=el("select",{"aria-label":"Mão de obra",onchange:e=>{x.servicoId=e.target.value;renderMO();preview()}});
+    if(!servDe(x.servicoId))s.append(el("option",{value:""},"Escolha…"));
+    sorted.forEach(sv=>s.append(el("option",{value:sv.id},`${servNome(sv)} (${rotuloServ(sv)})`)));
+    s.value=servDe(x.servicoId)?x.servicoId:"";
+    const pc=el("span",{class:"sub","data-mo-pc":"1",style:"text-align:center"});
+    const sub=el("span",{class:"sub","data-mo-sub":x.servicoId||""});
+    box.append(el("div",{class:"comp-row"},s,pc,sub,el("button",{type:"button",class:"x","aria-label":"Remover mão de obra",onclick:()=>{moItens.splice(i,1);renderMO();preview()}},"×")));
+  });
+  atualizarMO();
+}
+function atualizarMO(){
+  const pecas=totalPecas();
+  document.querySelectorAll("[data-mo-pc]").forEach(e=>e.textContent=pecas);
+  document.querySelectorAll("[data-mo-sub]").forEach(e=>{const sv=servDe(e.dataset.moSub);e.textContent=brl(custoServLote(sv,pecas));e.title=sv?.tipo==="fechado"?`Valor fechado: ${pecas?brl(custoServPeca(sv,pecas))+" por peça":"preencha a grade de quantidades"}`:""});
+  const lote=moItens.reduce((t,x)=>t+custoServLote(servDe(x.servicoId),pecas),0);
+  $("t-mo-pc").textContent=pecas;$("t-mo-lote").textContent=brl(lote);
+  const temFechado=moItens.some(x=>servDe(x.servicoId)?.tipo==="fechado");
+  $("mo-aviso").hidden=!(temFechado&&!pecas);
+}
+$("mo-add").addEventListener("click",()=>{if(!servicos.length){abrirModalMO();return}moItens.push({servicoId:"",qtd:1});renderMO()});
+function usoServico(id){return [...modelos.filter(m=>Array.isArray(m.maoDeObra)&&m.maoDeObra.some(x=>x.servicoId===id)),...refs.filter(r=>(r.maoDeObraComum||[]).some(x=>x.servicoId===id)).map(r=>({skuPai:`${CAT_KIT}-${pad(r.numero)} (comum)`}))]}
+function renderServicos(){
+  const q=$("sq").value.trim().toLowerCase(),tb=$("sbody");tb.innerHTML="";
+  const rows=[...servicos].sort((a,b)=>servNome(a).localeCompare(servNome(b),"pt-BR")).filter(s=>!q||[s.etapa,s.prestador,s.descricao].join(" ").toLowerCase().includes(q));
+  if(!servicos.length)tb.append(el("tr",{},el("td",{colspan:6,class:"empty"},"Nenhuma mão de obra cadastrada. Adicione a primeira acima.")));
+  else if(!rows.length)tb.append(el("tr",{},el("td",{colspan:6,class:"empty"},"Nada encontrado.")));
+  rows.forEach(s=>{
+    const act=confirmServ===s.id
+      ?el("span",{class:"confirm"},"Excluir?",el("button",{class:"btn danger sm",onclick:()=>delServ(s)},"Sim"),el("button",{class:"btn ghost sm",onclick:()=>{confirmServ=null;renderServicos()}},"Não"))
+      :el("span",{class:"row",style:"justify-content:flex-end"},el("button",{class:"btn ghost sm",onclick:()=>abrirModalMO("editar",s)},"Editar"),el("button",{class:"btn danger sm",onclick:()=>{
+          const uso=usoServico(s.id);if(uso.length){toast(`Em uso em ${uso.map(m=>m.skuPai).join(", ")}. Tire das fichas antes de excluir.`);return}
+          confirmServ=s.id;renderServicos()}},"Excluir"));
+    tb.append(el("tr",{},el("td",{},el("b",{},s.etapa)),el("td",{},s.prestador||"—"),el("td",{},s.descricao||"—"),el("td",{},el("span",{class:"pill"},s.tipo==="fechado"?"Valor fechado":"Por peça")),
+      el("td",{class:"num"},el("b",{},brl(s.preco)),s.tipo==="fechado"?el("span",{class:"note"}," total"):el("span",{class:"note"}," /pç")),el("td",{class:"num"},act)));
+  });
+}
+$("sq").addEventListener("input",renderServicos);
+["s","mm"].forEach(p=>$(p+"-tipo").addEventListener("change",e=>{$(p+"-preco-lbl").textContent=e.target.value==="fechado"?"Valor total do serviço":"Custo por peça"}));
+["s-preco","mm-preco"].forEach(k=>$(k).addEventListener("blur",e=>{e.target.value=fmtIn(parseNum(e.target.value))}));
+async function criarServico(p){
+  if(!db){toast("Banco de dados indisponível");return null}
+  const etapa=$(p+"-etapa").value.trim();if(!etapa){toast("Informe a etapa");$(p+"-etapa").focus();return null}
+  const preco=r2(parseNum($(p+"-preco").value));if(!preco){toast("Informe o valor");$(p+"-preco").focus();return null}
+  const d={tipo:$(p+"-tipo").value,etapa,prestador:$(p+"-prest").value.trim(),descricao:$(p+"-desc").value.trim(),preco};
+  try{const novo=await DB.criarServico(d);[p+"-etapa",p+"-prest",p+"-preco",p+"-desc"].forEach(k=>$(k).value="");toast(`${servNome(novo)}: ${rotuloServ(novo)}`);await recarregar();return novo}
+  catch(e){toast("Não foi possível salvar a mão de obra");return null}
+}
+$("s-add").addEventListener("click",()=>criarServico("s"));
+async function delServ(s){try{await DB.excluirServico(s.id);confirmServ=null;toast(`${servNome(s)} excluída`);await recarregar()}catch(e){toast("Não foi possível excluir")}}
+function abrirModalMO(origem="ficha",s=null){
+  moOrigem=origem;editServId=s?.id||null;
+  $("mm-etapa").value=s?.etapa||"";$("mm-prest").value=s?.prestador||"";$("mm-desc").value=s?.descricao||"";$("mm-preco").value=s?fmtIn(s.preco):"";
+  $("mm-tipo").value=s?.tipo||"peca";$("mm-preco-lbl").textContent=$("mm-tipo").value==="fechado"?"Valor total do serviço":"Custo por peça";
+  $("mm-title").textContent=s?"Editar mão de obra":"Nova mão de obra";$("mm-save").textContent=s?"Salvar alterações":(origem==="ficha"?"Salvar e adicionar à ficha":"Salvar");
+  $("modal-mo").hidden=false;setTimeout(()=>$("mm-etapa").focus(),30);
+}
+function fecharModalMO(){$("modal-mo").hidden=true;editServId=null}
+$("go-mo").addEventListener("click",()=>abrirModalMO("ficha"));
+$("mm-close").addEventListener("click",fecharModalMO);$("mm-cancel").addEventListener("click",fecharModalMO);
+$("modal-mo").addEventListener("click",e=>{if(e.target===$("modal-mo"))fecharModalMO()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("modal-mo").hidden)fecharModalMO()});
+$("mm-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(editServId){
+    const etapa=$("mm-etapa").value.trim(),preco=r2(parseNum($("mm-preco").value));
+    if(!etapa){toast("Informe a etapa");return}if(!preco){toast("Informe o valor");return}
+    $("mm-save").disabled=true;
+    try{await DB.atualizarServico(editServId,{etapa,prestador:$("mm-prest").value.trim()||null,descricao:$("mm-desc").value.trim()||null,tipo:$("mm-tipo").value,preco});toast("Mão de obra atualizada");fecharModalMO();await recarregar()}
+    catch(err){toast("Não foi possível salvar")}finally{$("mm-save").disabled=false}
+    return;
+  }
+  $("mm-save").disabled=true;
+  const novo=await criarServico("mm");$("mm-save").disabled=false;
+  if(!novo)return;
+  if(!servDe(novo.id))servicos.push(novo);
+  if(moOrigem!=="ficha"){fecharModalMO();return}
+  const vazio=moItens.find(x=>!servDe(x.servicoId));
+  if(vazio){vazio.servicoId=novo.id;vazio.qtd=1}else moItens.push({servicoId:novo.id,qtd:1});
+  $("modal-mo").hidden=true;renderMO();preview();
+});
+
+/* ================= banco (Supabase) ================= */
+async function q(p){const {data,error}=await p;if(error)throw error;return data}
+const toPeca=r=>({id:r.id,numero:r.numero,ordem:r.ordem,categoria:r.categoria,skuPai:r.sku_pai,nome:r.nome,cores:r.cores||[],tamanhos:r.tamanhos||[],
+  quantidades:r.quantidades||{},composicao:r.composicao||[],maoDeObra:Array.isArray(r.mao_de_obra)?r.mao_de_obra:[],olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em});
+const toRef=(r,pecas)=>{const ps=pecas.filter(p=>p.numero===r.numero).sort((a,b)=>a.ordem-b.ordem);
+  return {numero:r.numero,tipo:r.tipo,nome:r.nome,colecao:r.colecao||"",ncm:r.ncm||"",margem:Number(r.margem)||0,fotoPath:r.foto_path,obs:r.obs||"",
+    olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em,pecas:ps,
+    composicaoComum:r.composicao_comum||[],maoDeObraComum:r.mao_de_obra_comum||[],
+    label:r.tipo==="conjunto"?`Conjunto ${pad(r.numero)}`:`${nomeDe("categorias",ps[0]?.categoria||"")} ${pad(r.numero)}`}};
+const toInsumo=r=>({id:r.id,nome:r.nome,un:r.un,qtdCompra:Number(r.qtd_compra)||1,valorTotal:Number(r.valor_total)||0,preco:Number(r.preco)||0,fornecedor:r.fornecedor||"",cor:r.cor||""});
+const fromInsumo=d=>{const o={};if("nome"in d)o.nome=d.nome;if("un"in d)o.un=d.un;if("qtdCompra"in d)o.qtd_compra=d.qtdCompra;if("valorTotal"in d)o.valor_total=d.valorTotal;if("preco"in d)o.preco=d.preco;if("fornecedor"in d)o.fornecedor=d.fornecedor||null;if("cor"in d)o.cor=d.cor||null;o.atualizado_em=new Date().toISOString();return o};
+const toServico=r=>({tipo:r.tipo||"peca",id:r.id,etapa:r.etapa,prestador:r.prestador||"",descricao:r.descricao||"",preco:Number(r.preco)||0});
+const DB={
+  criarInsumo:async d=>toInsumo(await q(sb.from("insumos").insert(fromInsumo(d)).select().single())),
+  atualizarInsumo:(id,p)=>q(sb.from("insumos").update(fromInsumo(p)).eq("id",id)),
+  excluirInsumo:id=>q(sb.from("insumos").delete().eq("id",id)),
+  criarServico:async d=>toServico(await q(sb.from("servicos").insert({tipo:d.tipo,etapa:d.etapa,prestador:d.prestador||null,descricao:d.descricao||null,preco:d.preco}).select().single())),
+  atualizarServico:(id,p)=>q(sb.from("servicos").update({...p,atualizado_em:new Date().toISOString()}).eq("id",id)),
+  excluirServico:id=>q(sb.from("servicos").delete().eq("id",id)),
+  salvarConfig:t=>q(sb.from("config").upsert({id:1,dados:t,atualizado_em:new Date().toISOString()})),
+};
+let primeiraCarga=true;
+async function recarregar(){
+  try{
+    const [cfg,ins,rfs,pcs,srv]=await Promise.all([q(sb.from("config").select("dados").eq("id",1).maybeSingle()),q(sb.from("insumos").select("*")),q(sb.from("referencias").select("*").order("numero",{ascending:false})),q(sb.from("pecas").select("*")),q(sb.from("servicos").select("*"))]);
+    if(cfg?.dados){const d=cfg.dados;tabelas={categorias:d.categorias||tabelas.categorias,cores:d.cores||tabelas.cores,tamanhos:d.tamanhos||tabelas.tamanhos,canais:d.canais||tabelas.canais,simples:d.simples??tabelas.simples,margem:d.margem??tabelas.margem}}
+    insumos=ins.map(toInsumo);servicos=srv.map(toServico);const ps=pcs.map(toPeca);refs=rfs.map(r=>toRef(r,ps));modelos=ps;
+    if(primeiraCarga){renderTaxas();primeiraCarga=false;if(!editing){renderAll();resetForm()}}
+    $("offline").hidden=true;$("status").textContent="Salvo na nuvem";renderAll();
+  }catch(e){$("offline").hidden=false;$("status").textContent="Sem conexão"}
+}
+
+/* ================= login ================= */
+function telaLogin(on){
+  $("view-login").hidden=!on;$("nav").hidden=on;$("sair").hidden=on;
+  if(on){["novo","modelos","insumos","mo","config"].forEach(v=>$("view-"+v).hidden=true);$("olist-btn").hidden=true;$("status").textContent=""}
+  else show(load("parllo-tab")||"novo");
+}
+async function entrouCom(session){
+  if(!session){db=null;telaLogin(true);return}
+  const ok=await sb.rpc("sou_autorizado").then(r=>r.data===true).catch(()=>false);
+  if(!ok){await sb.auth.signOut();$("l-msg").textContent=`A conta ${session.user.email} não tem acesso a este sistema.`;telaLogin(true);return}
+  db=true;telaLogin(false);await recarregar();olistStatus();
+}
+$("login-form").addEventListener("submit",async e=>{
+  e.preventDefault();const msg=$("l-msg");msg.textContent="Entrando…";
+  const {error}=await sb.auth.signInWithPassword({email:$("l-email").value.trim(),password:$("l-senha").value});
+  msg.textContent=error?(/confirm/i.test(error.message)?"Confirme o e-mail pelo link que você recebeu e tente de novo.":"E-mail ou senha incorretos."):"";
+});
+$("l-criar").addEventListener("click",async()=>{
+  const email=$("l-email").value.trim(),senha=$("l-senha").value,msg=$("l-msg");
+  if(!email||senha.length<6){msg.textContent="Preencha o e-mail e uma senha com pelo menos 6 caracteres.";return}
+  const redir=location.protocol.startsWith("http")?location.origin+location.pathname:undefined;
+  const {data,error}=await sb.auth.signUp({email,password:senha,options:{emailRedirectTo:redir}});
+  msg.textContent=error?"Não foi possível criar a conta: "+error.message:(data.session?"":"Conta criada. Abra o link de confirmação que chegou no seu e-mail e depois entre.");
+});
+$("sair").addEventListener("click",()=>sb.auth.signOut());
+
+/* ================= início ================= */
+resetForm();renderAll();renderTaxas();
+if(!window.supabase){$("status").textContent="Sem internet";$("offline").hidden=false;return}
+sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+sb.auth.getSession().then(({data})=>entrouCom(data.session));
+sb.auth.onAuthStateChange((ev,session)=>{if(ev==="SIGNED_IN"&&!db)entrouCom(session);if(ev==="SIGNED_OUT"){db=null;telaLogin(true)}});
+})();
+</script>
+</body>
+</html>
