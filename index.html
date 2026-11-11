@@ -773,9 +773,22 @@ function mostrarFotoPeca(){
   if(p.fotoPath&&!p.fotoRemover){mostrarFoto(null);fotoUrl(p.fotoPath).then(u=>{if(pecasForm[ativa]===p&&!p.fotoPreview)mostrarFoto(u)});return}
   mostrarFoto(null);
 }
-$("f-foto").addEventListener("change",e=>{
-  const f=e.target.files[0];if(!f)return;e.target.value="";
-  if(f.size>10*1024*1024){toast("A foto passa de 10 MB. Use uma imagem menor.");return}
+/* reduz a foto para caber no limite de 2 MB da Olist (lado maior até 1600 px, JPEG) */
+async function comprimirFoto(file){
+  const img=await new Promise((ok,erro)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=erro;i.src=URL.createObjectURL(file)});
+  const max=1600,esc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*esc);c.height=Math.round(img.naturalHeight*esc);
+  const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
+  URL.revokeObjectURL(img.src);
+  let q=0.88,blob=null;
+  while(q>=0.4){blob=await new Promise(r=>c.toBlob(r,"image/jpeg",q));if(blob&&blob.size<=1.8*1024*1024)break;q-=0.08}
+  if(!blob||blob.size>1.9*1024*1024)throw new Error("tamanho");
+  return new File([blob],(file.name.replace(/\.[^.]+$/,"")||"foto")+".jpg",{type:"image/jpeg"});
+}
+$("f-foto").addEventListener("change",async e=>{
+  let f=e.target.files[0];if(!f)return;e.target.value="";
+  if(f.size>25*1024*1024){toast("A foto passa de 25 MB. Use uma imagem menor.");return}
+  try{f=await comprimirFoto(f)}catch(err){toast("Não consegui preparar essa foto. Tente outra imagem (JPG ou PNG).");return}
   const p=pecasForm[ativa];p.fotoArquivo=f;p.fotoRemover=false;p.fotoPreview=URL.createObjectURL(f);mostrarFotoPeca();renderTabs();
 });
 $("f-foto-rem").addEventListener("click",()=>{const p=pecasForm[ativa];p.fotoArquivo=null;p.fotoPreview=null;p.fotoRemover=true;mostrarFotoPeca();renderTabs()});
@@ -816,6 +829,11 @@ $("form").addEventListener("submit",async e=>{
   e.preventDefault();
   if(!db){toast("Banco de dados indisponível");return}
   const msg=$("f-msg");
+  if(tipoRef==="conjunto"){
+    const nomes=pecasForm.map(p=>p.nome.trim().toLowerCase());
+    const dup=nomes.findIndex((n,i)=>n&&nomes.indexOf(n)!==i);
+    if(dup>=0){ativar(dup);msg.textContent=`Duas peças estão com o nome "${pecasForm[dup].nome.trim()}". Cada peça precisa de um nome diferente (a Olist não aceita nomes repetidos).`;$("f-pnome").focus();return}
+  }
   if(tipoRef==="conjunto"){const sem=pecasForm.findIndex(p=>!p.nome.trim());if(sem>=0){ativar(sem);msg.textContent="Dê um nome a esta peça.";$("f-pnome").focus();return}}
   const nome=tipoRef==="conjunto"?pecasForm.map(p=>p.nome.trim()).join(" + "):$("f-nome").value.trim();
   if(!nome){msg.textContent="Dê um nome ao produto.";return}
