@@ -960,6 +960,20 @@ async function enviarOlist(r){
   let kit=null;if(r.tipo==="conjunto"){const custo=custoRef(r),b=precosDe(custo,r.margem);kit={preco:precoCanal(b,canal),precoCusto:custo}}
   enviando.add(r.numero);renderList();toast(`Enviando ${r.label} à Olist…`);
   try{
+    // fotos salvas antes da redução automática: reduz e troca o arquivo antes de enviar
+    for(const p of r.pecas){
+      if(!p.fotoPath)continue;
+      const url=await fotoUrl(p.fotoPath);if(!url)continue;
+      const blob=await fetch(url).then(x=>x.ok?x.blob():null).catch(()=>null);
+      if(!blob||blob.size<=1.9*1024*1024)continue;
+      toast(`Reduzindo a foto de ${p.skuPai}…`);
+      const menor=await comprimirFoto(new File([blob],"foto.jpg",{type:blob.type||"image/jpeg"}));
+      const novo=`${r.numero}/${p.categoria}-${Date.now()}.jpg`;
+      const up=await sb.storage.from("parllo-fotos").upload(novo,menor,{contentType:"image/jpeg",upsert:false});
+      if(up.error)throw new Error("não consegui reduzir a foto de "+p.skuPai);
+      await q(sb.from("pecas").update({foto_path:novo}).eq("id",p.id));
+      sb.storage.from("parllo-fotos").remove([p.fotoPath]);p.fotoPath=novo;
+    }
     const {data,error}=await sb.functions.invoke("olist-enviar",{body:{numero:r.numero,pecas,kit}});
     if(error)throw new Error(await erroDaFuncao(error));
     toast(data.avisos?.length?`${r.label} enviada com ${data.avisos.length} aviso(s). Veja nos detalhes.`:`${r.label} enviada à Olist`);
