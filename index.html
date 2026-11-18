@@ -284,7 +284,7 @@ tr.detail > td{background:var(--bg)}
             <div class="add" id="qa-cores" hidden><input class="cod" id="qa-cores-cod" maxlength="3" placeholder="Cód."><input id="qa-cores-nome" placeholder="Nome da cor"><button class="btn sm" type="button" data-qa-save="cores">Adicionar cor</button></div></div>
           <div class="section"><div class="row" style="justify-content:space-between"><b>Tamanhos</b><button class="link" type="button" data-qa="tamanhos">+ novo tamanho</button></div>
             <div class="chips" id="f-tams"></div>
-            <div class="add" id="qa-tamanhos" hidden><input class="cod" id="qa-tamanhos-cod" maxlength="3" placeholder="Cód."><input id="qa-tamanhos-nome" placeholder="Nome do tamanho"><button class="btn sm" type="button" data-qa-save="tamanhos">Adicionar tamanho</button></div></div>
+            <div class="add" id="qa-tamanhos" hidden><input class="cod" id="qa-tamanhos-cod" maxlength="3" placeholder="Ex.: GG"><input id="qa-tamanhos-nome" hidden><button class="btn sm" type="button" data-qa-save="tamanhos">Adicionar tamanho</button></div></div>
             </div>
           </div>
         </div>
@@ -464,7 +464,7 @@ tr.detail > td{background:var(--bg)}
       <div class="panel"><h3>Cores (3 caracteres)</h3><div id="c-cor"></div>
         <div class="add"><input class="cod" id="c-cor-cod" maxlength="3" placeholder="PRT"><input id="c-cor-nome" placeholder="Preto"><button class="btn sm" type="button" data-add="cores">Adicionar</button></div></div>
       <div class="panel"><h3>Tamanhos (ordem de exibição)</h3><div id="c-tam"></div>
-        <div class="add"><input class="cod" id="c-tam-cod" maxlength="3" placeholder="GG"><input id="c-tam-nome" placeholder="Extra grande"><button class="btn sm" type="button" data-add="tamanhos">Adicionar</button></div></div>
+        <div class="add"><input class="cod" id="c-tam-cod" maxlength="3" placeholder="Ex.: GG"><input id="c-tam-nome" hidden><button class="btn sm" type="button" data-add="tamanhos">Adicionar</button></div></div>
     </div>
   </section>
 </main>
@@ -682,12 +682,12 @@ function renderGrade(semPreview){
   const tb=el("tbody");
   cs.forEach(c=>{
     const tr=el("tr",{},el("td",{},nomeDe("cores",c)));
-    ts.forEach(t=>{const k=c+"|"+t;tr.append(el("td",{},el("input",{inputmode:"numeric","aria-label":`Peças ${nomeDe("cores",c)} ${nomeDe("tamanhos",t)}`,value:qtds[k]||"",placeholder:"0",
+    ts.forEach(t=>{const k=c+"|"+t;tr.append(el("td",{},el("input",{inputmode:"numeric","aria-label":`Peças ${nomeDe("cores",c)} ${t}`,value:qtds[k]||"",placeholder:"0",
       oninput:e=>{const v=Math.max(0,Math.round(parseNum(e.target.value)));if(v)qtds[k]=v;else delete qtds[k];atualizarTotais()}})))});
     tr.append(el("td",{class:"tot","data-row":c}));tb.append(tr);
   });
   const tf=el("tr",{},el("td",{class:"tot"},"Total"));ts.forEach(t=>tf.append(el("td",{class:"tot","data-col":t})));tf.append(el("td",{class:"tot","data-all":"1"}));tb.append(tf);
-  box.append(el("div",{class:"gradewrap"},el("table",{class:"grade"},el("thead",{},el("tr",{},el("th",{},"Cor"),ts.map(t=>el("th",{},nomeDe("tamanhos",t))),el("th",{},"Total"))),tb)));
+  box.append(el("div",{class:"gradewrap"},el("table",{class:"grade"},el("thead",{},el("tr",{},el("th",{},"Cor"),ts.map(t=>el("th",{},t)),el("th",{},"Total"))),tb)));
   atualizarTotais(semPreview);
 }
 function atualizarTotais(semPreview){
@@ -700,7 +700,7 @@ function atualizarTotais(semPreview){
 /* atalho: nova cor / novo tamanho direto na ficha */
 document.querySelectorAll("[data-qa]").forEach(b=>b.addEventListener("click",()=>{const box=$("qa-"+b.dataset.qa);box.hidden=!box.hidden;if(!box.hidden)$("qa-"+b.dataset.qa+"-cod").focus()}));
 document.querySelectorAll("[data-qa-save]").forEach(b=>b.addEventListener("click",async()=>{
-  const lista=b.dataset.qaSave,cod=$("qa-"+lista+"-cod").value.trim().toUpperCase(),nome=$("qa-"+lista+"-nome").value.trim();
+  const lista=b.dataset.qaSave,cod=$("qa-"+lista+"-cod").value.trim().toUpperCase(),nome=lista==="tamanhos"?cod:$("qa-"+lista+"-nome").value.trim();
   if(!/^[A-Z0-9]+$/.test(cod)||(lista==="cores"&&cod.length!==3)){toast(lista==="cores"?"Use exatamente 3 letras ou números, sem acento":"Use letras ou números, sem acento");return}
   if(tabelas[lista].some(x=>x.cod===cod)){toast(`O código ${cod} já existe`);return}
   (lista==="cores"?sel.cores:sel.tams).add(cod);
@@ -1025,7 +1025,7 @@ $("ex-olist").addEventListener("click",()=>{
     const cat=[pre,nomeDe("categorias",p.categoria)].filter(Boolean).join(" > ");
     const {pai,vars}=skusFor(p.categoria,r.numero,p.cores||[],p.tamanhos||[]);
     rows.push(["",pai,nomeP,"UN",r.ncm||"","0",dec(preco),dec(c.custo),"Ativo","Não",cat,"V","",""]);
-    vars.forEach(v=>rows.push(["",v.sku,`${nomeP} ${nomeDe("cores",v.cor)} ${nomeDe("tamanhos",v.tam)}`,"UN",r.ncm||"","0",dec(preco),dec(c.custo),"Ativo","Não",cat,"S",pai,`Cor:${nomeDe("cores",v.cor)}||Tamanho:${nomeDe("tamanhos",v.tam)}`]));
+    vars.forEach(v=>rows.push(["",v.sku,`${nomeP} ${nomeDe("cores",v.cor)} ${v.tam}`,"UN",r.ncm||"","0",dec(preco),dec(c.custo),"Ativo","Não",cat,"S",pai,`Cor:${nomeDe("cores",v.cor)}||Tamanho:${v.tam}`]));
   }));
   saveCsv(`parllo-olist-${hoje()}.csv`,rows);
 });
@@ -1142,7 +1142,7 @@ $("cfg-save").addEventListener("click",()=>{
 });
 document.querySelectorAll("[data-add]").forEach(btn=>btn.addEventListener("click",()=>{
   const lista=btn.dataset.add,pre={categorias:"c-cat",cores:"c-cor",tamanhos:"c-tam"}[lista];
-  const cod=$(pre+"-cod").value.trim().toUpperCase(),nome=$(pre+"-nome").value.trim();
+  const cod=$(pre+"-cod").value.trim().toUpperCase(),nome=lista==="tamanhos"?cod:$(pre+"-nome").value.trim();
   if(!/^[A-Z0-9]+$/.test(cod)||(lista!=="tamanhos"&&cod.length!==3)){toast(lista==="tamanhos"?"Use letras ou números, sem acento":"Use exatamente 3 letras ou números, sem acento");return}
   if(!nome){toast("Preencha o nome");return}
   if(tabelas[lista].some(x=>x.cod===cod)){toast(`O código ${cod} já existe`);return}
