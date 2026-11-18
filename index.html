@@ -276,6 +276,7 @@ tr.detail > td{background:var(--bg)}
             <div style="min-width:0">
           <div class="fields">
             <label class="f">Categoria<select id="f-cat"></select></label>
+            <p class="note full" id="f-cat-aviso" hidden style="color:var(--warn);grid-column:1/-1;margin:0"></p>
             <label class="f" id="f-pnome-box" hidden>Nome do produto (desta peça)<input id="f-pnome" placeholder="Ex.: Top faixa linho"></label>
           </div>
           <div class="section"><div class="row" style="justify-content:space-between"><b>Cores</b><button class="link" type="button" data-qa="cores">+ nova cor</button></div>
@@ -649,7 +650,7 @@ function renderTabs(){
 function buildSelects(){
   const cat=$("f-cat");cat.innerHTML="";
   tabelas.categorias.filter(c=>c.cod!==CAT_KIT).forEach(c=>cat.append(el("option",{value:c.cod},`${c.cod} · ${c.nome}`)));
-  const p=pecasForm[ativa];if(p)cat.value=p.categoria;cat.disabled=!!p?.salva;
+  const p=pecasForm[ativa];if(p)cat.value=p.categoria;cat.disabled=false;avisoCategoria();
   const qc=$("q-cat"),qv=qc.value;qc.innerHTML="";qc.append(el("option",{value:""},"Todas as categorias"));
   tabelas.categorias.forEach(c=>qc.append(el("option",{value:c.cod},c.nome)));qc.value=qv;
   const ex=$("ex-canal"),ev=ex.value||load("parllo-excanal")||"site";ex.innerHTML="";
@@ -660,8 +661,15 @@ function buildSelects(){
 $("f-cat").addEventListener("change",e=>{
   const v=e.target.value;
   if(pecasForm.some((p,i)=>i!==ativa&&p.categoria===v)){toast("Já existe uma peça dessa categoria neste conjunto");e.target.value=pecasForm[ativa].categoria;return}
-  pecasForm[ativa].categoria=v;renderTabs();preview();
+  pecasForm[ativa].categoria=v;avisoCategoria();renderTabs();preview();
 });
+function avisoCategoria(){
+  const a=$("f-cat-aviso"),p=pecasForm[ativa];if(!a)return;
+  const mudou=p&&!modoComum&&p.catOriginal&&p.catOriginal!==p.categoria;
+  a.hidden=!mudou;if(!mudou)return;
+  const n=pad(numAtual());
+  a.textContent=`A categoria vai mudar o SKU de ${p.catOriginal}-${n} para ${p.categoria}-${n} (e de todas as variações).`+(p.olistId?" Ao salvar, os SKUs também serão atualizados na Olist.":"");
+}
 $("f-pnome").addEventListener("input",e=>{pecasForm[ativa].nome=e.target.value;renderTabs()});
 
 /* grade de quantidade de peças (cor x tamanho) */
@@ -817,7 +825,7 @@ function editRef(r){
   $("f-nome").value=r.tipo==="conjunto"?"":(r.nome||"");$("f-col").value=r.colecao||"";$("f-ncm").value=r.ncm||"";$("f-obs").value=r.obs||"";$("f-margem").value=fmtPct(r.margem);
   pecasForm=r.pecas.map(p=>{
     const qt={};Object.entries(p.quantidades||{}).forEach(([sku,q])=>{const s=sku.split("-");if(s.length>=4&&q>0)qt[s[2]+"|"+s.slice(3).join("-")]=Number(q)});
-    return {id:p.id,fotoPath:p.fotoPath||null,fotoArquivo:null,fotoPreview:null,fotoRemover:false,categoria:p.categoria,nome:p.nome||"",sel:{cores:new Set(p.cores||[]),tams:new Set(p.tamanhos||[])},comp:(p.composicao||[]).map(x=>({...x})),qtds:qt,moItens:(Array.isArray(p.maoDeObra)?p.maoDeObra:[]).map(x=>({...x})),salva:true};
+    return {id:p.id,catOriginal:p.categoria,olistId:p.olistId||null,olistVariacoes:p.olistVariacoes||{},fotoPath:p.fotoPath||null,fotoArquivo:null,fotoPreview:null,fotoRemover:false,categoria:p.categoria,nome:p.nome||"",sel:{cores:new Set(p.cores||[]),tams:new Set(p.tamanhos||[])},comp:(p.composicao||[]).map(x=>({...x})),qtds:qt,moItens:(Array.isArray(p.maoDeObra)?p.maoDeObra:[]).map(x=>({...x})),salva:true};
   });
   if(!pecasForm.length)pecasForm=[novaPeca(tabelas.categorias[0].cod)];
   comum={comp:(r.composicaoComum||[]).map(x=>({...x})),moItens:(r.maoDeObraComum||[]).map(x=>({...x}))};modoComum=false;
@@ -857,12 +865,16 @@ $("form").addEventListener("submit",async e=>{
       return {id:p.id,row:{numero,ordem:i,categoria:p.categoria,nome:tipoRef==="conjunto"?p.nome.trim():nome,
         cores:[...p.sel.cores],tamanhos:[...p.sel.tams],
         quantidades:Object.fromEntries([...p.sel.cores].flatMap(c=>[...p.sel.tams].map(t=>[`${pai}-${c}-${t}`,p.qtds[c+"|"+t]||0])).filter(([,x])=>x>0)),
-        composicao:compDe(p),mao_de_obra:moDe(p),custo_no_cadastro:custoPecaForm(p),foto_path:p.fotoFinal,atualizado_em:new Date().toISOString()}};
+        composicao:compDe(p),mao_de_obra:moDe(p),custo_no_cadastro:custoPecaForm(p),foto_path:p.fotoFinal,atualizado_em:new Date().toISOString(),
+        // categoria trocada: renomeia as chaves dos IDs da Olist para o SKU novo
+        ...(p.id&&p.catOriginal&&p.catOriginal!==p.categoria?{olist_variacoes:Object.fromEntries(Object.entries(p.olistVariacoes||{}).map(([k,v])=>[k.replace(`${p.catOriginal}-${pad(numero)}`,pai),v]))}:{})}};
     });
+    const reenviar=!!editing&&pecasForm.some(p=>p.id&&p.olistId&&p.catOriginal&&p.catOriginal!==p.categoria);
     if(editing){const ficam=new Set(linhas.map(l=>l.id).filter(Boolean));const saem=editing.pecas.filter(p=>!ficam.has(p.id));if(saem.length){await q(sb.from("pecas").delete().in("id",saem.map(p=>p.id)));const fs=saem.map(p=>p.fotoPath).filter(Boolean);if(fs.length)sb.storage.from("parllo-fotos").remove(fs)}}
     for(const l of linhas){if(l.id)await q(sb.from("pecas").update(l.row).eq("id",l.id));else await q(sb.from("pecas").insert(l.row))}
     toast(`${refLabel(tipoRef,pecasForm[0].categoria,numero)} ${editing?"atualizada":"salva"}`);
     await recarregar();resetForm();
+    if(reenviar){const r=refs.find(x=>x.numero===numero);if(r){show("modelos");openId=numero;toast("Atualizando os SKUs na Olist…");enviarOlist(r)}}
   }catch(err){msg.textContent=err?.code==="23505"?"Esse número ou SKU já existe. Recarregue a página e salve de novo.":"Não foi possível salvar: "+(err?.message||"tente de novo")}
   finally{$("f-save").disabled=false}
 });
@@ -1272,7 +1284,7 @@ $("mm-form").addEventListener("submit",async e=>{
 /* ================= banco (Supabase) ================= */
 async function q(p){const {data,error}=await p;if(error)throw error;return data}
 const toPeca=r=>({id:r.id,numero:r.numero,ordem:r.ordem,categoria:r.categoria,skuPai:r.sku_pai,nome:r.nome,cores:r.cores||[],tamanhos:r.tamanhos||[],
-  quantidades:r.quantidades||{},fotoPath:r.foto_path||null,composicao:r.composicao||[],maoDeObra:Array.isArray(r.mao_de_obra)?r.mao_de_obra:[],olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em});
+  quantidades:r.quantidades||{},fotoPath:r.foto_path||null,composicao:r.composicao||[],maoDeObra:Array.isArray(r.mao_de_obra)?r.mao_de_obra:[],olistId:r.olist_id,olistVariacoes:r.olist_variacoes||{},olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em});
 const toRef=(r,pecas)=>{const ps=pecas.filter(p=>p.numero===r.numero).sort((a,b)=>a.ordem-b.ordem);
   return {numero:r.numero,tipo:r.tipo,nome:r.nome,colecao:r.colecao||"",ncm:r.ncm||"",margem:Number(r.margem)||0,obs:r.obs||"",
     olistId:r.olist_id,olistStatus:r.olist_status,olistErro:r.olist_erro,olistEnviadoEm:r.olist_enviado_em,pecas:ps,
